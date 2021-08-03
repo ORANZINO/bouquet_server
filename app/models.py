@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import List
 
 from pydantic import Field
@@ -39,6 +39,11 @@ class SnsType(str, Enum):
     email: str = "Email"
     google: str = "Google"
     apple: str = "Apple"
+
+
+class SexType(IntEnum, Enum):
+    male: int = 1
+    female: int = 0
 
 
 class Token(BaseModel):
