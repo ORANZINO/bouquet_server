@@ -15,8 +15,8 @@ class Config:
     DB_ECHO: bool = True
     DEBUG: bool = False
     TEST_MODE: bool = False
-    DB_URL: str = "mysql+pymysql://root:fairfield0519@localhost:3306"
-    SCHEMA_URL: str = environ.get("DB_URL", "mysql+pymysql://root:fairfield0519@localhost:3306/bouquet")
+    DB_URL: str = environ.get("DB_URL", "mysql+pymysql://root:fairfield0519@localhost:3306")
+    SCHEMA_URL: str = environ.get("SCHEMA_URL", "mysql+pymysql://root:fairfield0519@localhost:3306/bouquet")
 
 
 @dataclass

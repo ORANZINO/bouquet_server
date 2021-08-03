@@ -83,7 +83,7 @@ async def delete_me(request: Request, character_id: int = Header(None), session:
 
 
 @router.get('/character/dup_name')
-async def check_character_name(request: Request, character_name: str = Header(None), english: bool = True, session: Session = Depends(db.session)):
+async def check_character_name(request: Request, character_name: str = Header(None), english: bool = Header(True), session: Session = Depends(db.session)):
     if not english:
         character = Characters.get(session, name=str(base64.b64decode(character_name.encode()), encoding='utf-8'))
     else:
