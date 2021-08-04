@@ -1,7 +1,6 @@
 from datetime import datetime
 from enum import Enum, IntEnum
 from typing import List
-
 from pydantic import Field
 from pydantic.main import BaseModel
 from pydantic.networks import EmailStr, IPvAnyAddress
@@ -42,8 +41,8 @@ class SnsType(str, Enum):
 
 
 class SexType(IntEnum, Enum):
-    male: int = 1
     female: int = 0
+    male: int = 1
 
 
 class Token(BaseModel):
@@ -139,5 +138,4 @@ class CharacterRow(BaseModel):
 
     class Config:
         orm_mode = True
-
 

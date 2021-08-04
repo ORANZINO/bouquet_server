@@ -51,7 +51,7 @@ async def upload_img(request: Request, img: UploadFile = File(...)):
 async def style_img(request: Request, target_sex: SexType, img: UploadFile = File(...)):
     user = request.state.user
     filename = img.filename
-    img = Image.open(img.file)
+    img = Image.open(img.file).convert('RGB')
     styled_img = solver.style(img, target_sex)
     buf = io.BytesIO()
     styled_img.save(buf, format='PNG')
@@ -64,11 +64,11 @@ async def style_img(request: Request, target_sex: SexType, img: UploadFile = Fil
 
 
 @router.post('/img/ref')
-async def ref_img(request: Request, target_sex: SexType, ref: UploadFile = File(...), src: UploadFile = File(...)):
+async def ref_img(request: Request, target_sex: SexType, src: UploadFile = File(...), ref: UploadFile = File(...)):
     user = request.state.user
     filename = src.filename
-    src = Image.open(src.file)
-    ref = Image.open(ref.file)
+    src = Image.open(src.file).convert('RGB')
+    ref = Image.open(ref.file).convert('RGB')
     refed_img = solver.ref(ref, src, target_sex)
     buf = io.BytesIO()
     refed_img.save(buf, format='PNG')
