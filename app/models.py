@@ -104,7 +104,7 @@ class CharacterMe(BaseModel):
     job: str
     nationality: str
     intro: str
-    tmi: str
+    tmi: str = None
     likes: List
     hates: List
 
@@ -133,7 +133,7 @@ class CharacterRow(BaseModel):
     job: str
     nationality: str
     intro: str
-    tmi: str
+    tmi: str = None
 
     class Config:
         orm_mode = True
@@ -147,7 +147,7 @@ class CharacterUpdate(BaseModel):
     job: str
     nationality: str
     intro: str
-    tmi: str
+    tmi: str = None
     likes: List
     hates: List
 

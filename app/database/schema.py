@@ -166,24 +166,24 @@ class BaseMixin:
 class Users(Base, BaseMixin):
     __tablename__ = "users"
     status = Column(Enum("active", "deleted", "blocked"), default="active")
-    email = Column(String(length=255), nullable=True)
-    pw = Column(String(length=2000), nullable=True)
-    name = Column(String(length=255), nullable=True)
+    email = Column(String(length=255), nullable=False)
+    pw = Column(String(length=2000), nullable=False)
+    name = Column(String(length=255), nullable=False)
     profile_img = Column(String(length=1000), nullable=True)
-    sns_type = Column(Enum("Email", "Google", "Apple"), nullable=True)
+    sns_type = Column(Enum("Email", "Google", "Apple"), nullable=False)
     marketing_agree = Column(Boolean, nullable=True, default=True)
     character = relationship("Characters", backref="characters", cascade="all, delete-orphan")
 
 
 class Characters(Base, BaseMixin):
     __tablename__ = "characters"
-    name = Column(String(length=255), unique=True)
-    profile_img = Column(String(length=1000), nullable=True)
-    birth = Column(Integer, nullable=True)
-    job = Column(String(length=45), nullable=True)
-    nationality = Column(String(length=45), nullable=True)
-    intro = Column(String(length=100))
-    tmi = Column(String(length=400))
+    name = Column(String(length=255), unique=True, nullable=False)
+    profile_img = Column(String(length=1000), nullable=False)
+    birth = Column(Integer, nullable=False)
+    job = Column(String(length=45), nullable=False)
+    nationality = Column(String(length=45), nullable=False)
+    intro = Column(String(length=100), nullable=False)
+    tmi = Column(String(length=400), nullable=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="cascade"), nullable=False)
     like = relationship("CharacterLikes", backref="character_likes", cascade="all, delete-orphan")
     hate = relationship("CharacterHates", backref="character_hates", cascade="all, delete-orphan")
@@ -191,11 +191,11 @@ class Characters(Base, BaseMixin):
 
 class CharacterLikes(Base, BaseMixin):
     __tablename__ = "character_likes"
-    like = Column(String(length=20))
-    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"))
+    like = Column(String(length=20), nullable=False)
+    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
 
 
 class CharacterHates(Base, BaseMixin):
     __tablename__ = "character_hates"
-    hate = Column(String(length=20))
-    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"))
+    hate = Column(String(length=20), nullable=False)
+    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
