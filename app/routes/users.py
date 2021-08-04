@@ -1,4 +1,5 @@
 from typing import List, Optional
+from collections import defaultdict
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Header
@@ -105,4 +106,24 @@ async def check_character_name(request: Request, character_name: str = Header(No
     else:
         character = Characters.get(session, name=character_name)
     return JSONResponse(status_code=200, content=dict(msg="CHECK_CHARACTER_NAME_SUCCESS", result=bool(character)))
+
+
+@router.get('/character/all')
+async def get_all_character(request: Request, session: Session = Depends(db.session)):
+    user = request.state.user
+    characters = Characters.filter(session, user_id=user.id).all()
+    character_ids = [character.id for character in characters]
+    likes = CharacterLikes.filter(session, character_id__in=character_ids).all()
+    hates = CharacterHates.filter(session, character_id__in=character_ids).all()
+    likes_dict = defaultdict(list)
+    for like in likes:
+        likes_dict[like.character_id].append(like.like)
+    hates_dict = defaultdict(list)
+    for hate in hates:
+        hates_dict[hate.character_id].append(hate.hate)
+    for i in range(len(characters)):
+        setattr(characters[i], 'likes', likes_dict[characters[i].id])
+        setattr(characters[i], 'hates', hates_dict[characters[i].id])
+    characters = [CharacterUpdate.from_orm(character).dict() for character in characters]
+    return characters
 
