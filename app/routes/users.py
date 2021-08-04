@@ -14,7 +14,7 @@ import string
 import base64
 import secrets
 
-from app.models import MessageOk, UserMe, UserUpdate, CharacterId, CharacterMe, CharacterRow
+from app.models import MessageOk, UserMe, UserUpdate, CharacterUpdate, CharacterMe, CharacterRow
 
 router = APIRouter(prefix='/user')
 
@@ -71,13 +71,29 @@ async def get_character(request: Request, character_id: int = Header(None), sess
 
 
 @router.put('/character')
-async def put_me(request: Request):
-    ...
+async def put_character(request: Request, character: CharacterUpdate, session: Session = Depends(db.session)):
+    user = request.state.user
+    old_character = Characters.get(session, id=character.id)
+    if old_character.user_id != user.id:
+        return JSONResponse(status_code=400, content=dict(msg="WRONG_USER"))
+    character = dict(character)
+    character_row = {k: character[k] for k in character.keys() - ['likes', 'hates']}
+    Characters.filter(session, id=character['id']).update(True, **character_row)
+    CharacterLikes.filter(session, character_id=character['id']).delete(auto_commit=True)
+    CharacterHates.filter(session, character_id=character['id']).delete(auto_commit=True)
+    for like in character['likes']:
+        CharacterLikes.create(session, True, like=like, character_id=character['id'])
+    for hate in character['hates']:
+        CharacterHates.create(session, True, hate=hate, character_id=character['id'])
+    return JSONResponse(status_code=200, content=dict(msg="UPDATE_CHARACTER_SUCCESS"))
 
 
 @router.delete('/character')
-async def delete_me(request: Request, character_id: int = Header(None), session: Session = Depends(db.session)):
+async def delete_character(request: Request, character_id: int = Header(None), session: Session = Depends(db.session)):
     user = request.state.user
+    character = Characters.get(session, id=character_id)
+    if character.user_id != user.id:
+        return JSONResponse(status_code=400, content=dict(msg="WRONG_USER"))
     Characters.filter(session, id=character_id, user_id=user.id).delete(auto_commit=True)
     return JSONResponse(status_code=200, content=dict(msg="DELETE_CHARACTER_SUCCESS"))
 

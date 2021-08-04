@@ -177,7 +177,8 @@ class Users(Base, BaseMixin):
 
 class Characters(Base, BaseMixin):
     __tablename__ = "characters"
-    name = Column(String(length=20), unique=True)
+    name = Column(String(length=255), unique=True)
+    profile_img = Column(String(length=1000), nullable=True)
     birth = Column(Integer, nullable=True)
     job = Column(String(length=45), nullable=True)
     nationality = Column(String(length=45), nullable=True)
