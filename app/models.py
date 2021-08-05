@@ -139,17 +139,8 @@ class CharacterRow(BaseModel):
         orm_mode = True
 
 
-class CharacterUpdate(BaseModel):
+class CharacterUpdate(CharacterMe):
     id: int
-    name: str
-    profile_img: str
-    birth: int
-    job: str
-    nationality: str
-    intro: str
-    tmi: str = None
-    likes: List
-    hates: List
 
     class Config:
         orm_mode = True
@@ -167,3 +158,18 @@ class CharacterUpdate(BaseModel):
                 "hates": ["비오는 곳", "낮은 당도", "사과(라이벌)"]
             }
         }
+
+
+class CharacterOther(BaseModel):
+    name: str
+    profile_img: str
+    birth: int
+    job: str
+    nationality: str
+    intro: str
+    tmi: str = None
+    user_id: int
+
+    class Config:
+        orm_mode = True
+
