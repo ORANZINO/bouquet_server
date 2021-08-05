@@ -36,7 +36,7 @@ s3_client = boto3.client(service_name='s3', aws_access_key_id=environ.get('S3_AC
 async def upload_img(request: Request, img: UploadFile = File(...)):
     user = request.state.user
     filename = img.filename
-    img = Image.open(img.file).resize((256, 256))
+    img = Image.open(img.file)
     buf = io.BytesIO()
     img.save(buf, format='PNG')
     buf.seek(0)
