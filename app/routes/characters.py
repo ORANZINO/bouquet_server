@@ -115,10 +115,8 @@ async def get_another_character(request: Request, character_name: str = Header(N
 
 
 @router.get('/another/all')
-async def get_all_another_characters(request: Request, character_name: str = Header(None), session: Session = Depends(db.session)):
-    character = Characters.get(session, name=str(base64.b64decode(character_name.encode()), encoding='utf-8'))
-    character = CharacterOther.from_orm(character).dict()
-    user = Users.get(session, id=character['user_id'])
+async def get_all_another_characters(request: Request, user_name: str = Header(None), session: Session = Depends(db.session)):
+    user = Users.get(session, name=user_name)
     user = UserMe.from_orm(user).dict()
     characters = Characters.filter(session, user_id=user['id']).all()
     character_ids = [character.id for character in characters]
