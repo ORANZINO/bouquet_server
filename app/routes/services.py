@@ -1,5 +1,6 @@
 import json
 import boto3
+import uuid
 import io
 from os import environ
 from time import time, sleep
@@ -35,14 +36,14 @@ s3_client = boto3.client(service_name='s3', aws_access_key_id=environ.get('S3_AC
 @router.post('/img/upload', status_code=201)
 async def upload_img(request: Request, img: UploadFile = File(...)):
     user = request.state.user
-    filename = img.filename
+    filetype = img.filename.split('.')[-1]
     img = Image.open(img.file)
     buf = io.BytesIO()
     img.save(buf, format='PNG')
     buf.seek(0)
-    save_name = f'{user.name} {filename}'
-    s3_client.upload_fileobj(buf, bucket, save_name)
-    upload_url = f"https://{bucket}.s3.{region}.amazonaws.com/{save_name}"
+    save_path = f'{user.name}/{uuid.uuid1()}.{filetype}'
+    s3_client.upload_fileobj(buf, bucket, save_path)
+    upload_url = f"https://{bucket}.s3.{region}.amazonaws.com/{save_path}"
 
     return JSONResponse(status_code=201, content=dict(msg="UPLOAD_IMAGE_SUCCESS", url=upload_url))
 
