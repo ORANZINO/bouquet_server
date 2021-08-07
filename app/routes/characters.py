@@ -44,7 +44,7 @@ async def get_my_character(request: Request, character_id: int = Header(None), s
     hates = [hate.hate for hate in hates]
     setattr(character, 'likes', likes)
     setattr(character, 'hates', hates)
-    character = CharacterMe.from_orm(character).dict()
+    character = CharacterUpdate.from_orm(character).dict()
     return character
 
 
@@ -98,7 +98,7 @@ async def get_all_my_characters(request: Request, session: Session = Depends(db.
     for i in range(len(characters)):
         setattr(characters[i], 'likes', likes_dict[characters[i].id])
         setattr(characters[i], 'hates', hates_dict[characters[i].id])
-    characters = [CharacterMe.from_orm(character).dict() for character in characters]
+    characters = [CharacterUpdate.from_orm(character).dict() for character in characters]
     return characters
 
 
