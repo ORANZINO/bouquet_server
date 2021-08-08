@@ -31,7 +31,7 @@ async def create_my_character(request: Request, character: CharacterMe, session:
         CharacterLikes.create(session, True, like=like, character_id=character_id)
     for hate in character['hates']:
         CharacterHates.create(session, True, hate=hate, character_id=character_id)
-    return JSONResponse(status_code=200, content=dict(msg="CREATE_CHARACTER_SUCCESS"))
+    return JSONResponse(status_code=200, content=dict(msg="CREATE_CHARACTER_SUCCESS", id=character_id))
 
 
 @router.get('/me')
