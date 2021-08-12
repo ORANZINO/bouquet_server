@@ -89,7 +89,7 @@ Bouquet에서 다음과 같은 것들을 지원해줘요!
 
 ## 🗄 ERD 
 
-<img src="https://user-images.githubusercontent.com/54830220/129126458-54f7e65e-f71a-4bb5-970d-ed17cbf0700a.png">
+<img src="https://user-images.githubusercontent.com/54830220/129126458-54f7e65e-f71a-4bb5-970d-ed17cbf0700a.png" width="30%" height="30%">
 
 ## 🌵 Environment
 
@@ -99,7 +99,7 @@ Bouquet에서 다음과 같은 것들을 지원해줘요!
 
 ## 📐 Architecture
 
-<img src="https://user-images.githubusercontent.com/54830220/129126451-62e72082-a0eb-4847-bd96-b82a974d97d5.png">
+<img src="https://user-images.githubusercontent.com/54830220/129126451-62e72082-a0eb-4847-bd96-b82a974d97d5.png" width="40%" height="40%">
 
 ## 🏃‍♂️ How To Run
 
