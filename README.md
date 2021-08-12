@@ -14,7 +14,8 @@
 
 
 <div align="center">
-**당신의 꿈꿔왔던, 당신만의 부캐를 꽃피워 보세요! 부캐 생성 SNS, Bouquet 💐**
+
+**당신이 꿈꿔왔던, 당신만의 부캐를 꽃피워 보세요! 부캐 생성 SNS, Bouquet 💐**
 </div>
 
 <div align="center">
