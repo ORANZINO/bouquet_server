@@ -16,10 +16,10 @@
 <div align="center">
 **당신의 꿈꿔왔던, 당신만의 부캐를 꽃피워 보세요! 부캐 생성 SNS, Bouquet 💐**
 </div>
+
 <div align="center">
 <img src="https://img.shields.io/badge/FastAPI-0.66.0-green?logo=FastAPI"><img src="https://img.shields.io/badge/python-3.8-yellow?logo=python"><img src="https://img.shields.io/badge/PyTorch-1.9.0-red?logo=PyTorch">
 </div>
----
 
 ## ➡️ List
 
