@@ -87,7 +87,9 @@ Bouquet에서 다음과 같은 것들을 지원해줘요!
 
 * [API Description Link](http://13.209.247.208/docs)
 
+## 🗄 ERD 
 
+<img src="https://git.swmgit.org/swm-12/12_swm46/bouquet_server/-/blob/master/imgs/ERD.png">
 
 ## 🌵 Environment
 
@@ -97,7 +99,7 @@ Bouquet에서 다음과 같은 것들을 지원해줘요!
 
 ## 📐 Architecture
 
-
+<img src="https://git.swmgit.org/swm-12/12_swm46/bouquet_server/-/blob/master/imgs/Architecture.png">
 
 ## 🏃‍♂️ How To Run
 
