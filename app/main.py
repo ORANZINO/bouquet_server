@@ -13,7 +13,7 @@ from app.database.conn import db
 from app.common.config import conf
 from app.middlewares.token_validator import access_control
 from app.middlewares.trusted_hosts import TrustedHostMiddleware
-from app.routes import index, auth, users, services, characters
+from app.routes import index, auth, users, imgs, characters
 
 API_KEY_HEADER = APIKeyHeader(name="Authorization", auto_error=False)
 
@@ -46,9 +46,9 @@ def create_app():
     app.include_router(index.router)
     app.include_router(auth.router, tags=["Authentication"])
     if conf().DEBUG:
-        app.include_router(services.router, tags=["Services"], dependencies=[Depends(API_KEY_HEADER)])
+        app.include_router(imgs.router, tags=["Images"], dependencies=[Depends(API_KEY_HEADER)])
     else:
-        app.include_router(services.router, tags=["Services"])
+        app.include_router(imgs.router, tags=["Images"])
     app.include_router(users.router, tags=["Users"], dependencies=[Depends(API_KEY_HEADER)])
     app.include_router(characters.router, tags=["Characters"], dependencies=[Depends(API_KEY_HEADER)])
     return app
