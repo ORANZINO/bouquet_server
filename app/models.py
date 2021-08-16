@@ -39,6 +39,12 @@ class SnsType(str, Enum):
     google: str = "Google"
     apple: str = "Apple"
 
+class TemplateType(str, Enum):
+    none: str = "None"
+    image: str = "Image"
+    diary: str = "Diary"
+    list: str = "List"
+    album: str = "Album"
 
 class SexType(IntEnum, Enum):
     female: int = 0
@@ -173,3 +179,109 @@ class CharacterOther(BaseModel):
     class Config:
         orm_mode = True
 
+
+class FollowInfo(BaseModel):
+    character_id: int
+    follower_id: int
+
+    class Config:
+        orm_mode = True
+
+
+class Post(BaseModel):
+    character_id: int
+    character_name: str
+    template: TemplateType = "None"
+    text: str
+
+    class Config:
+        orm_mode = True
+
+
+class Image(Post):
+    template: TemplateType = "Image"
+    img: str
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "character_id": 1,
+                "character_name": "오란지",
+                "text": "orange pic",
+                "template": "Image",
+                "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+            }
+        }
+
+
+class Diary(Post):
+    template: TemplateType = "Diary"
+    title: str
+    weather: str
+    img: str
+    date: int
+    content: str
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "character_id": 1,
+                "character_name": "오란지",
+                "text": "오늘은 일기를 썼다.",
+                "template": "Diary",
+                "title": "오늘의 일기",
+                "weather": "맑음",
+                "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                "date": 20210816,
+                "content": "오늘은 밥을 먹었다. 참 재미있었다."
+            }
+        }
+
+
+class Album(Post):
+    template: TemplateType = "Album"
+    title: str
+    img: str
+    release_date: int
+    tracks: List
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "character_id": 1,
+                "character_name": "오란지",
+                "text": "새 앨범이 나왔어용",
+                "template": "Album",
+                "title": "this is hiphop",
+                "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                "release_date": 20210821,
+                "tracks": [{"title": "배신의 십자가", "lyric": "으아으아으아으아으아으아"}, {"title": "달콤한 오렌지", "lyric": "우와우와우와우와"}]
+            }
+        }
+
+
+class List(Post):
+    template: TemplateType = "List"
+    title: str
+    content: str
+    components: List
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "character_id": 1,
+                "character_name": "오란지",
+                "text": "제가 좋아하는 것들입니당",
+                "template": "List",
+                "title": "My Favorites",
+                "content": "these are what I like",
+                "components": [{"title": "Orange", "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg", "content": "오렌지 좋아함 ㅎㅎ"}]
+            }
+        }
+
+
+class Comments(BaseModel):
+    post_id: int
+    character_name: str
+    comment: str
+    parent: int
