@@ -8,14 +8,14 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.database.conn import db
-from app.database.schema import Users, Characters, CharacterHates, CharacterLikes
+from app.database.schema import Users, Characters, CharacterHates, CharacterLikes, Follows
 from app import models as m
 from app.errors import exceptions as ex
 import string
 import base64
 import secrets
 
-from app.models import CharacterUpdate, CharacterMe, CharacterRow, CharacterOther, UserMe
+from app.models import CharacterUpdate, CharacterMe, CharacterRow, CharacterOther, UserMe, FollowInfo
 
 router = APIRouter(prefix='/character')
 
@@ -133,3 +133,32 @@ async def get_all_another_characters(request: Request, user_name: str = Header(N
         setattr(characters[i], 'hates', hates_dict[characters[i].id])
     characters = [CharacterMe.from_orm(character).dict() for character in characters]
     return characters
+
+
+@router.get('/top')
+async def get_top_characters(request: Request, session: Session = Depends(db.session)):
+    top_characters = Characters.filter(session).order_by('-num_follows').limit(10).all()
+    return JSONResponse(status_code=200, content=dict(msg="GET_TOP_CHARACTERS_SUCCESS", characters=top_characters))
+
+
+@router.post('/follow')
+async def follow(request: Request, follow_info: FollowInfo, session: Session = Depends(db.session)):
+    follow_exists = Follows.get(session, character_id=follow_info.character_id, follower_id=follow_info.follower_id)
+    if follow_exists:
+        Characters.filter(session, character_id=follow_info.character_id) \
+            .update(True, {Characters.num_followers: Characters.num_followers - 1})
+        Characters.filter(session, character_id=follow_info.follower_id) \
+            .update(True, {Characters.num_follows: Characters.num_follows - 1})
+        Follows.filter(session, character_id=follow_info.character_id, follower_id=follow_info.follower_id).delete(True)
+        return JSONResponse(status_code=200, content=dict(msg="UNFOLLOW_SUCCESS"))
+    else:
+        Characters.filter(session, character_id=follow_info.character_id)\
+            .update(True, {Characters.num_followers: Characters.num_followers + 1})
+        Characters.filter(session, character_id=follow_info.follower_id) \
+            .update(True, {Characters.num_follows: Characters.num_follows + 1})
+        Follows.create(session, True, character_id=follow_info.character_id, follower_id=follow_info.follower_id)
+        return JSONResponse(status_code=200, content=dict(msg="FOLLOW_SUCCESS"))
+
+
+
+
