@@ -45,7 +45,7 @@ from app.models import SnsType, Token, UserToken, UserRegister, UserLogin
 router = APIRouter(prefix="/auth")
 
 
-@router.post("/dup_email")
+@router.get("/dup_email")
 async def check_email(email: str = Header(None), session: Session = Depends(db.session)):
     user = Users.get(session, email=email)
     return JSONResponse(status_code=200, content=dict(msg="CHECK_EMAIL_SUCCESS", result=bool(user)))
