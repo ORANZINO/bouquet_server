@@ -16,7 +16,7 @@ from app.models import SexType
 from PIL import Image
 from app.errors import exceptions as ex
 
-router = APIRouter(prefix='/services')
+router = APIRouter(prefix='/img')
 
 args = SimpleNamespace()
 args.img_size = 256
@@ -33,7 +33,7 @@ s3_client = boto3.client(service_name='s3', aws_access_key_id=environ.get('S3_AC
                          aws_secret_access_key=environ.get('S3_ACCESS_KEY'))
 
 
-@router.post('/img/upload', status_code=201)
+@router.post('/upload', status_code=201)
 async def upload_img(request: Request, img: UploadFile = File(...)):
     user = request.state.user
     filetype = img.filename.split('.')[-1]
@@ -48,7 +48,7 @@ async def upload_img(request: Request, img: UploadFile = File(...)):
     return JSONResponse(status_code=201, content=dict(msg="UPLOAD_IMAGE_SUCCESS", url=upload_url))
 
 
-@router.post('/img/style', status_code=201)
+@router.post('/style', status_code=201)
 async def style_img(request: Request, target_sex: SexType, img: UploadFile = File(...)):
     user = request.state.user
     filename = img.filename
@@ -64,7 +64,7 @@ async def style_img(request: Request, target_sex: SexType, img: UploadFile = Fil
     return JSONResponse(status_code=201, content=dict(msg="STYLE_IMAGE_SUCCESS", url=upload_url))
 
 
-@router.post('/img/ref')
+@router.post('/ref')
 async def ref_img(request: Request, target_sex: SexType, src: UploadFile = File(...), ref: UploadFile = File(...)):
     user = request.state.user
     filename = src.filename

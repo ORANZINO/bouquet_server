@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 
 import bcrypt
+import base64
 import jwt
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 
 # TODO:
 from sqlalchemy.orm import Session
@@ -42,6 +43,12 @@ from app.models import SnsType, Token, UserToken, UserRegister, UserLogin
 
 
 router = APIRouter(prefix="/auth")
+
+
+@router.post("/dup_email")
+async def check_email(email: str = Header(None), session: Session = Depends(db.session)):
+    user = Users.get(session, email=str(base64.b64decode(email.encode()), encoding='utf-8'))
+    return JSONResponse(status_code=200, content=dict(msg="CHECK_EMAIL_SUCCESS", result=bool(user)))
 
 
 @router.post("/register/{sns_type}", status_code=201, response_model=Token)
