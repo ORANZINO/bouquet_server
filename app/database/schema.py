@@ -7,6 +7,7 @@ from sqlalchemy import (
     Enum,
     Boolean,
     ForeignKey,
+    Text
 )
 from sqlalchemy.orm import Session, relationship
 
@@ -167,26 +168,58 @@ class Users(Base, BaseMixin):
     __tablename__ = "users"
     status = Column(Enum("active", "deleted", "blocked"), default="active")
     email = Column(String(length=255), nullable=False)
-    pw = Column(String(length=2000), nullable=False)
+    pw = Column(String(length=255), nullable=False)
     name = Column(String(length=255), nullable=False)
-    profile_img = Column(String(length=1000), nullable=True)
+    profile_img = Column(String(length=255), nullable=True)
     sns_type = Column(Enum("Email", "Google", "Apple"), nullable=False)
     marketing_agree = Column(Boolean, nullable=True, default=True)
     character = relationship("Characters", backref="characters", cascade="all, delete-orphan")
 
 
+class Follows(Base, BaseMixin):
+    __tablename__ = "follows"
+    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False, primary_key=True)
+    follower_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False, primary_key=True)
+
+
+class Posts(Base, BaseMixin):
+    __tablename__ = "posts"
+    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
+    character_name = Column(String(length=255), ForeignKey("characters.name", ondelete="cascade"), nullable=False)
+    template = Column(Enum("None", "Image", "Diary", "List", "Album"), nullable=True)
+    text = Column(Text(), nullable=True)
+    img = relationship("Images", backref="images", cascade="all, delete-orphan")
+    list = relationship("Lists", backref="lists", cascade="all, delete-orphan")
+    album = relationship("Albums", backref="albums", cascade="all, delete-orphan")
+    comment = relationship("Comments", backref="comments", cascade="all, delete-orphan")
+    sunshine = relationship("PostSunshines", backref="post_sunshines", cascade="all, delete-orphan")
+
+
 class Characters(Base, BaseMixin):
     __tablename__ = "characters"
     name = Column(String(length=255), unique=True, nullable=False)
-    profile_img = Column(String(length=1000), nullable=False)
+    profile_img = Column(String(length=255), nullable=False)
     birth = Column(Integer, nullable=False)
     job = Column(String(length=45), nullable=False)
     nationality = Column(String(length=45), nullable=False)
     intro = Column(String(length=100), nullable=False)
     tmi = Column(String(length=400), nullable=True)
+    num_followers = Column(Integer, nullable=False, default=0)
+    num_follows = Column(Integer, nullable=False, default=0)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="cascade"), nullable=False)
     like = relationship("CharacterLikes", backref="character_likes", cascade="all, delete-orphan")
     hate = relationship("CharacterHates", backref="character_hates", cascade="all, delete-orphan")
+    followee = relationship("Follows", backref="followed", cascade="all, delete-orphan",
+                            foreign_keys=[Follows.character_id])
+    follower = relationship("Follows", backref="follow", cascade="all, delete-orphan",
+                            foreign_keys=[Follows.follower_id])
+    post_character_id = relationship("Posts", backref="post_character_id", cascade="all, delete-orphan",
+                                     foreign_keys=[Posts.character_id])
+    post_character_name = relationship("Posts", backref="post_character_name", cascade="all, delete-orphan",
+                                       foreign_keys=[Posts.character_name])
+    album_character_name = relationship("Albums", backref="album_character_name", cascade="all, delete-orphan")
+    post_sunshine = relationship("PostSunshines", backref="character_post_sunshines", cascade="all, delete-orphan")
+    comment_sunshine = relationship("CommentSunshines", backref="character_comment_sunshines", cascade="all, delete-orphan")
 
 
 class CharacterLikes(Base, BaseMixin):
@@ -199,3 +232,75 @@ class CharacterHates(Base, BaseMixin):
     __tablename__ = "character_hates"
     hate = Column(String(length=20), nullable=False)
     character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
+
+
+class PostSunshines(Base, BaseMixin):
+    __tablename__ = "post_sunshines"
+    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="cascade"), nullable=False)
+
+
+class CommentSunshines(Base, BaseMixin):
+    __tablename__ = "comment_sunshines"
+    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
+    comment_id = Column(Integer, ForeignKey("comments.id", ondelete="cascade"), nullable=False)
+
+
+class Comments(Base, BaseMixin):
+    __tablename__ = "comments"
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="cascade"), nullable=False)
+    character_name = Column(String(length=255), ForeignKey("characters.name"), nullable=False)
+    comment = Column(String(length=255), nullable=False)
+    parent = Column(Integer, nullable=False)
+    deleted = Column(Boolean, nullable=False, default=False)
+    sunshine = relationship("CommentSunshines", backref="comment_sunshines", cascade="all, delete-orphan")
+
+
+class Images(Base, BaseMixin):
+    __tablename__ = "images"
+    img = Column(String(length=255), nullable=False)
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="cascade"), nullable=False)
+
+
+class Lists(Base, BaseMixin):
+    __tablename__ = "lists"
+    title = Column(String(length=255), nullable=False)
+    content = Column(String(length=255), nullable=True)
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="cascade"), nullable=False)
+
+
+class ListComponents(Base, BaseMixin):
+    __tablename__ = "list_components"
+    title = Column(String(length=255), nullable=False)
+    img = Column(String(length=255), nullable=True)
+    content = Column(String(length=255), nullable=True)
+    list_id = Column(Integer, ForeignKey("lists.id", ondelete="cascade"), nullable=False)
+
+
+class Diaries(Base, BaseMixin):
+    __tablename__ = "diaries"
+    title = Column(String(length=255), nullable=False)
+    weather = Column(String(length=32), nullable=True)
+    img = Column(String(length=255), nullable=True)
+    date = Column(Integer, nullable=False)
+    content = Column(Text(), nullable=False)
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="cascade"), nullable=False)
+
+
+class Albums(Base, BaseMixin):
+    __tablename__ = "albums"
+    title = Column(String(length=255), nullable=False)
+    img = Column(String(length=255), nullable=True)
+    artist = Column(String(length=255), ForeignKey("characters.name"), nullable=False)
+    release_date = Column(Integer, nullable=False)
+    track = relationship("Tracks", backref="tracks", cascade="all, delete-orphan")
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="cascade"), nullable=False)
+
+
+class Tracks(Base, BaseMixin):
+    __tablename__ = "tracks"
+    album_id = Column(Integer, ForeignKey("albums.id", ondelete="cascade"), nullable=False)
+    title = Column(String(length=255), nullable=False)
+    lyric = Column(Text(), nullable=True)
+
+
