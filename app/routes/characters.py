@@ -76,10 +76,7 @@ async def delete_my_character(request: Request, character_id: int = Header(None)
     return JSONResponse(status_code=200, content=dict(msg="DELETE_CHARACTER_SUCCESS"))
 
 
-@router.get('/me/dup_name')
-async def check_character_name(request: Request, character_name: str = Header(None), session: Session = Depends(db.session)):
-    character = Characters.get(session, name=str(base64.b64decode(character_name.encode()), encoding='utf-8'))
-    return JSONResponse(status_code=200, content=dict(msg="CHECK_CHARACTER_NAME_SUCCESS", result=bool(character)))
+
 
 
 @router.get('/me/all')

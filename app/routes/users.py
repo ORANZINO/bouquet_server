@@ -41,10 +41,7 @@ async def delete_me(request: Request):
     return JSONResponse(status_code=200, content=dict(msg="DELETE_USER_SUCCESS"))
 
 
-@router.get('/me/dup_name')
-async def check_user_name(request: Request, user_name: str = Header(None), session: Session = Depends(db.session)):
-    user = Users.get(session, name=str(base64.b64decode(user_name.encode()), encoding='utf-8'))
-    return JSONResponse(status_code=200, content=dict(msg="CHECK_CHARACTER_NAME_SUCCESS", result=bool(user)))
+
 
 
 
