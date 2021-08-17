@@ -13,7 +13,7 @@ from app.database.conn import db
 from app.common.config import conf
 from app.middlewares.token_validator import access_control
 from app.middlewares.trusted_hosts import TrustedHostMiddleware
-from app.routes import index, auth, users, imgs, characters, posts
+from app.routes import index, auth, users, imgs, characters, posts, search
 
 API_KEY_HEADER = APIKeyHeader(name="Authorization", auto_error=False)
 
@@ -45,6 +45,7 @@ def create_app():
     # 라우터 정의
     app.include_router(index.router)
     app.include_router(auth.router, tags=["Authentication"])
+    app.include_router(search.router, tags=["Search"])
     if conf().DEBUG:
         app.include_router(imgs.router, tags=["Images"], dependencies=[Depends(API_KEY_HEADER)])
     else:

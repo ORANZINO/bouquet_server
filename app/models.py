@@ -190,12 +190,18 @@ class FollowInfo(BaseModel):
 
 class Post(BaseModel):
     character_id: int
-    character_name: str
     template: TemplateType = "None"
     text: str
 
     class Config:
         orm_mode = True
+        schema_extra = {
+            "example": {
+                "character_id": 1,
+                "template": "None",
+                "text": "이것이 포스팅이다.",
+            }
+        }
 
 
 class Image(Post):
@@ -206,7 +212,6 @@ class Image(Post):
         schema_extra = {
             "example": {
                 "character_id": 1,
-                "character_name": "오란지",
                 "text": "orange pic",
                 "template": "Image",
                 "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
@@ -226,7 +231,6 @@ class Diary(Post):
         schema_extra = {
             "example": {
                 "character_id": 1,
-                "character_name": "오란지",
                 "text": "오늘은 일기를 썼다.",
                 "template": "Diary",
                 "title": "오늘의 일기",
@@ -249,9 +253,9 @@ class Album(Post):
         schema_extra = {
             "example": {
                 "character_id": 1,
-                "character_name": "오란지",
                 "text": "새 앨범이 나왔어용",
                 "template": "Album",
+                "description": "열심히 준비한 앨범입니다!",
                 "title": "this is hiphop",
                 "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
                 "release_date": 20210821,
@@ -270,7 +274,6 @@ class List(Post):
         schema_extra = {
             "example": {
                 "character_id": 1,
-                "character_name": "오란지",
                 "text": "제가 좋아하는 것들입니당",
                 "template": "List",
                 "title": "My Favorites",
@@ -280,8 +283,21 @@ class List(Post):
         }
 
 
-class Comments(BaseModel):
+class Comment(BaseModel):
     post_id: int
-    character_name: str
+    character_id: int
     comment: str
     parent: int
+
+
+class PostRow(BaseModel):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    character_id: int
+    character_name: str
+    template: TemplateType
+    text: str
+
+    class Config:
+        orm_mode = True
