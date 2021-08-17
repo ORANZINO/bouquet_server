@@ -132,10 +132,7 @@ async def get_all_another_characters(request: Request, user_name: str = Header(N
     return characters
 
 
-@router.get('/top')
-async def get_top_characters(request: Request, session: Session = Depends(db.session)):
-    top_characters = Characters.filter(session).order_by('-num_follows').limit(10).all()
-    return JSONResponse(status_code=200, content=dict(msg="GET_TOP_CHARACTERS_SUCCESS", characters=top_characters))
+
 
 
 @router.post('/follow')
