@@ -11,7 +11,7 @@ from starlette.responses import JSONResponse
 
 from app.common.consts import JWT_SECRET, JWT_ALGORITHM
 from app.database.conn import db
-from app.database.schema import Users
+from app.database.schema import Users, Characters
 from app.models import SnsType, Token, UserToken, UserRegister, UserLogin
 
 """
@@ -49,6 +49,18 @@ router = APIRouter(prefix="/auth")
 async def check_email(email: str = Header(None), session: Session = Depends(db.session)):
     user = Users.get(session, email=email)
     return JSONResponse(status_code=200, content=dict(msg="CHECK_EMAIL_SUCCESS", result=bool(user)))
+
+
+@router.get('/dup_user_name')
+async def check_user_name(user_name: str = Header(None), session: Session = Depends(db.session)):
+    user = Users.get(session, name=str(base64.b64decode(user_name.encode()), encoding='utf-8'))
+    return JSONResponse(status_code=200, content=dict(msg="CHECK_CHARACTER_NAME_SUCCESS", result=bool(user)))
+
+
+@router.get('/dup_character_name')
+async def check_character_name(character_name: str = Header(None), session: Session = Depends(db.session)):
+    character = Characters.get(session, name=str(base64.b64decode(character_name.encode()), encoding='utf-8'))
+    return JSONResponse(status_code=200, content=dict(msg="CHECK_CHARACTER_NAME_SUCCESS", result=bool(character)))
 
 
 @router.post("/register/{sns_type}", status_code=201, response_model=Token)
