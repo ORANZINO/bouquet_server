@@ -76,9 +76,6 @@ async def delete_my_character(request: Request, character_id: int = Header(None)
     return JSONResponse(status_code=200, content=dict(msg="DELETE_CHARACTER_SUCCESS"))
 
 
-
-
-
 @router.get('/me/all')
 async def get_all_my_characters(request: Request, session: Session = Depends(db.session)):
     user = request.state.user
@@ -107,7 +104,6 @@ async def get_another_character(request: Request, character_name: str = Header(N
     user = UserMe.from_orm(user).dict()
     character['user_name'] = user['name']
     character['user_profile_img'] = user['profile_img']
-    del character['user_id']
     return character
 
 
