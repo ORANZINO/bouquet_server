@@ -196,7 +196,7 @@ class Posts(Base, BaseMixin):
     img = relationship("Images", backref="images", cascade="all, delete-orphan")
     list = relationship("Lists", backref="lists", cascade="all, delete-orphan")
     album = relationship("Albums", backref="albums", cascade="all, delete-orphan")
-    comment = relationship("Comments", backref="comments", cascade="all, delete-orphan")
+    comment = relationship("Comments", backref="post_comment", cascade="all, delete-orphan")
     sunshine = relationship("PostSunshines", backref="post_sunshines", cascade="all, delete-orphan")
 
 
@@ -219,7 +219,7 @@ class Characters(Base, BaseMixin):
     follower = relationship("Follows", backref="follow", cascade="all, delete-orphan",
                             foreign_keys=[Follows.follower_id])
     post = relationship("Posts", backref="post", cascade="all, delete-orphan")
-    comment = relationship("Comments", backref="comment", cascade="all, delete-orphan")
+    comment = relationship("Comments", backref="character_comment", cascade="all, delete-orphan")
     post_sunshine = relationship("PostSunshines", backref="character_post_sunshines", cascade="all, delete-orphan")
     comment_sunshine = relationship("CommentSunshines", backref="character_comment_sunshines",
                                     cascade="all, delete-orphan")
