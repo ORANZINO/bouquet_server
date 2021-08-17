@@ -85,12 +85,18 @@ class BaseMixin:
             if len(key) > 2:
                 raise Exception("No 2 more dunders")
             col = getattr(cls, key[0])
-            if len(key) == 1: cond.append((col == val))
-            elif len(key) == 2 and key[1] == 'gt': cond.append((col > val))
-            elif len(key) == 2 and key[1] == 'gte': cond.append((col >= val))
-            elif len(key) == 2 and key[1] == 'lt': cond.append((col < val))
-            elif len(key) == 2 and key[1] == 'lte': cond.append((col <= val))
-            elif len(key) == 2 and key[1] == 'in': cond.append((col.in_(val)))
+            if len(key) == 1:
+                cond.append((col == val))
+            elif len(key) == 2 and key[1] == 'gt':
+                cond.append((col > val))
+            elif len(key) == 2 and key[1] == 'gte':
+                cond.append((col >= val))
+            elif len(key) == 2 and key[1] == 'lt':
+                cond.append((col < val))
+            elif len(key) == 2 and key[1] == 'lte':
+                cond.append((col <= val))
+            elif len(key) == 2 and key[1] == 'in':
+                cond.append((col.in_(val)))
         obj = cls()
         if session:
             obj._session = session
@@ -130,7 +136,7 @@ class BaseMixin:
         ret = None
 
         self._session.flush()
-        if qs > 0 :
+        if qs > 0:
             ret = self._q.first()
         if auto_commit:
             self._session.commit()
@@ -185,7 +191,6 @@ class Follows(Base, BaseMixin):
 class Posts(Base, BaseMixin):
     __tablename__ = "posts"
     character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
-    character_name = Column(String(length=255), ForeignKey("characters.name", ondelete="cascade"), nullable=False)
     template = Column(Enum("None", "Image", "Diary", "List", "Album"), nullable=True)
     text = Column(Text(), nullable=True)
     img = relationship("Images", backref="images", cascade="all, delete-orphan")
@@ -213,13 +218,11 @@ class Characters(Base, BaseMixin):
                             foreign_keys=[Follows.character_id])
     follower = relationship("Follows", backref="follow", cascade="all, delete-orphan",
                             foreign_keys=[Follows.follower_id])
-    post_character_id = relationship("Posts", backref="post_character_id", cascade="all, delete-orphan",
-                                     foreign_keys=[Posts.character_id])
-    post_character_name = relationship("Posts", backref="post_character_name", cascade="all, delete-orphan",
-                                       foreign_keys=[Posts.character_name])
-    album_character_name = relationship("Albums", backref="album_character_name", cascade="all, delete-orphan")
+    post = relationship("Posts", backref="post", cascade="all, delete-orphan")
+    comment = relationship("Comments", backref="comment", cascade="all, delete-orphan")
     post_sunshine = relationship("PostSunshines", backref="character_post_sunshines", cascade="all, delete-orphan")
-    comment_sunshine = relationship("CommentSunshines", backref="character_comment_sunshines", cascade="all, delete-orphan")
+    comment_sunshine = relationship("CommentSunshines", backref="character_comment_sunshines",
+                                    cascade="all, delete-orphan")
 
 
 class CharacterLikes(Base, BaseMixin):
@@ -249,7 +252,7 @@ class CommentSunshines(Base, BaseMixin):
 class Comments(Base, BaseMixin):
     __tablename__ = "comments"
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="cascade"), nullable=False)
-    character_name = Column(String(length=255), ForeignKey("characters.name"), nullable=False)
+    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
     comment = Column(String(length=255), nullable=False)
     parent = Column(Integer, nullable=False)
     deleted = Column(Boolean, nullable=False, default=False)
@@ -291,7 +294,8 @@ class Albums(Base, BaseMixin):
     __tablename__ = "albums"
     title = Column(String(length=255), nullable=False)
     img = Column(String(length=255), nullable=True)
-    artist = Column(String(length=255), ForeignKey("characters.name"), nullable=False)
+    artist = Column(String(length=255), nullable=False)
+    description = Column(Text(), nullable=True)
     release_date = Column(Integer, nullable=False)
     track = relationship("Tracks", backref="tracks", cascade="all, delete-orphan")
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="cascade"), nullable=False)
@@ -302,5 +306,3 @@ class Tracks(Base, BaseMixin):
     album_id = Column(Integer, ForeignKey("albums.id", ondelete="cascade"), nullable=False)
     title = Column(String(length=255), nullable=False)
     lyric = Column(Text(), nullable=True)
-
-
