@@ -128,9 +128,6 @@ async def get_all_another_characters(request: Request, user_name: str = Header(N
     return characters
 
 
-
-
-
 @router.post('/follow')
 async def follow(request: Request, follow_info: FollowInfo, session: Session = Depends(db.session)):
     follow_exists = Follows.get(session, character_id=follow_info.character_id, follower_id=follow_info.follower_id)

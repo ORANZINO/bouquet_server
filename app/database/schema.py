@@ -277,6 +277,7 @@ class Lists(Base, BaseMixin):
     __tablename__ = "lists"
     title = Column(String(length=255), nullable=False)
     content = Column(String(length=255), nullable=True)
+    img = Column(String(length=255), nullable=True)
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="cascade"), nullable=False)
 
 
