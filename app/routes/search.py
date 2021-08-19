@@ -22,5 +22,5 @@ async def get_top_characters(session: Session = Depends(db.session)):
 async def get_top_characters(page_num: int = 1, character_id: int = Header(None), session: Session = Depends(db.session)):
     top_posts = session.query(Posts).order_by(Posts.num_sunshines.desc()).offset((page_num - 1) * 5).limit(5).all()
     top_posts = [process_post(character_id, post, session) for post in top_posts]
-    return JSONResponse(status_code=200, content=dict(msg="GET_TOP_POSTS_SUCCESS", characters=top_posts))
+    return JSONResponse(status_code=200, content=dict(msg="GET_TOP_POSTS_SUCCESS", posts=top_posts))
 
