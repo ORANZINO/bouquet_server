@@ -1,21 +1,49 @@
 from datetime import datetime
 
-from fastapi import APIRouter
-from starlette.responses import Response
-from starlette.requests import Request
+from starlette.responses import Response, JSONResponse
 from inspect import currentframe as frame
+from fastapi import APIRouter, Depends, Header
+from sqlalchemy.orm import Session
+from starlette.requests import Request
+
+from app.database.conn import db
+from app.database.schema import Posts, Follows
+from app.utils.post_utils import process_post
+
 
 router = APIRouter()
 
 
 @router.get("/")
-async def index():
-    """
-    ELB 상태 체크용 API
-    :return:
-    """
-    current_time = datetime.utcnow()
-    return Response(f"Notification API (UTC: {current_time.strftime('%Y.%m.%d %H:%M:%S')})")
+async def index(character_id: int = Header(None), session: Session = Depends(db.session)):
+
+    if character_id is None:
+        posts = session.query(Posts).order_by(Posts.created_at.desc()).limit(10).all()
+    else:
+        followees = Follows.filter(session, follower_id=character_id).all()
+        followees = [f.character_id for f in followees]
+        posts = session.query(Posts).filter(Posts.character_id.in_(followees)).order_by(Posts.created_at.desc())\
+            .limit(10).all()
+
+    posts = [process_post(character_id, post, session) for post in posts]
+
+    return JSONResponse(status_code=200, content=dict(msg="GET_FEED_SUCCESS", posts=posts))
+
+
+@router.get("/{page_num}")
+async def index(page_num: int = 1, character_id: int = Header(None), session: Session = Depends(db.session)):
+
+    if character_id is None:
+        posts = session.query(Posts).order_by(Posts.created_at.desc()).offset((page_num - 1) * 10).limit(10).all()
+    else:
+        followees = Follows.filter(session, follower_id=character_id).all()
+        followees = [f.character_id for f in followees]
+        posts = session.query(Posts).filter(Posts.character_id.in_(followees)).order_by(Posts.created_at.desc())\
+            .offset((page_num - 1) * 10).limit(10).all()
+
+    posts = [process_post(character_id, post, session) for post in posts]
+
+    return JSONResponse(status_code=200, content=dict(msg="GET_FEED_SUCCESS", posts=posts))
 
 
 @router.get("/test")
