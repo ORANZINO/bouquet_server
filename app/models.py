@@ -322,6 +322,14 @@ class CharacterMini(BaseModel):
         orm_mode = True
 
 
+class CharacterCard(BaseModel):
+    name: str
+    profile_img: str
+
+    class Config:
+        orm_mode = True
+
+
 class CommentMini(BaseModel):
     id: int
     created_at: datetime
