@@ -18,7 +18,7 @@ router = APIRouter()
 async def index(page_num: int = Header(1), character_id: int = Header(None), session: Session = Depends(db.session)):
 
     if character_id is None:
-        posts = session.query(Posts).order_by(Posts.created_at.desc()).offset((page_num - 1) * 10).limit(10).all()
+        posts = session.query(Posts).order_by(Posts.num_sunshines.desc()).offset((page_num - 1) * 10).limit(10).all()
     else:
         followees = Follows.filter(session, follower_id=character_id).all()
         followees = [f.character_id for f in followees]
