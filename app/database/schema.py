@@ -129,6 +129,10 @@ class BaseMixin:
             self._q = self._q.order_by(col.asc()) if is_asc else self._q.order_by(col.desc())
         return self
 
+    def join(self, target, *props, **kwargs):
+        self._q = self._q.join(target, *props, **kwargs)
+        return self
+
     def update(self, auto_commit: bool = False, **kwargs):
         print("kwargs: ", kwargs)
         qs = self._q.update(kwargs)
@@ -193,11 +197,13 @@ class Posts(Base, BaseMixin):
     character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
     template = Column(Enum("None", "Image", "Diary", "List", "Album"), nullable=True)
     text = Column(Text(), nullable=True)
+    num_sunshines = Column(Integer, nullable=False, default=0)
     img = relationship("Images", backref="images", cascade="all, delete-orphan")
     list = relationship("Lists", backref="lists", cascade="all, delete-orphan")
     album = relationship("Albums", backref="albums", cascade="all, delete-orphan")
     comment = relationship("Comments", backref="post_comment", cascade="all, delete-orphan")
     sunshine = relationship("PostSunshines", backref="post_sunshines", cascade="all, delete-orphan")
+    comment_sunshine = relationship("CommentSunshines", backref="post_comment_sunshines", cascade="all, delete-orphan")
 
 
 class Characters(Base, BaseMixin):
@@ -245,6 +251,7 @@ class PostSunshines(Base, BaseMixin):
 
 class CommentSunshines(Base, BaseMixin):
     __tablename__ = "comment_sunshines"
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="cascade"), nullable=False)
     character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
     comment_id = Column(Integer, ForeignKey("comments.id", ondelete="cascade"), nullable=False)
 
@@ -256,6 +263,7 @@ class Comments(Base, BaseMixin):
     comment = Column(String(length=255), nullable=False)
     parent = Column(Integer, nullable=False)
     deleted = Column(Boolean, nullable=False, default=False)
+    num_sunshines = Column(Integer, nullable=False, default=0)
     sunshine = relationship("CommentSunshines", backref="comment_sunshines", cascade="all, delete-orphan")
 
 
