@@ -115,6 +115,8 @@ class CharacterMe(BaseModel):
     tmi: str = None
     likes: List
     hates: List
+    num_followers: int
+    num_follows: int
 
     class Config:
         orm_mode = True
@@ -142,6 +144,8 @@ class CharacterRow(BaseModel):
     nationality: str
     intro: str
     tmi: str = None
+    num_followers: int
+    num_follows: int
 
     class Config:
         orm_mode = True
@@ -177,6 +181,8 @@ class CharacterOther(BaseModel):
     intro: str
     tmi: str = None
     user_id: int
+    num_followers: int
+    num_follows: int
 
     class Config:
         orm_mode = True
