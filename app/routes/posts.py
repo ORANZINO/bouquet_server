@@ -91,6 +91,8 @@ async def get_post(post_id: int, character_id: int = Header(None), session: Sess
     post['created_at'] = (post['created_at'] + timedelta(hours=9)).isoformat()
     post['updated_at'] = (post['updated_at'] + timedelta(hours=9)).isoformat()
     character_info = CharacterMini.from_orm(Characters.get(session, id=post['character_id'])).dict()
+    post['character_name'] = character_info['name']
+    post['character_img'] = character_info['profile_img']
     my_sunshine = bool(PostSunshines.get(session, post_id=post_id, character_id=character_id))
     post['liked'] = my_sunshine
     my_comment_sunshine = CommentSunshines.filter(session, post_id=post_id, character_id=character_id).all()
@@ -116,13 +118,11 @@ async def get_post(post_id: int, character_id: int = Header(None), session: Sess
             parent_comments[i]['children'][j]['updated_at'] = (c['updated_at'] + timedelta(hours=9)).isoformat()
     del post['character_id']
     if post['template'] == TemplateType.none:
-        return JSONResponse(status_code=200, content=dict(msg="GET_POST_SUCCESS", post=post,
-                                                          character_info=character_info, comments=parent_comments))
+        return JSONResponse(status_code=200, content=dict(msg="GET_POST_SUCCESS", post=post, comments=parent_comments))
     elif post['template'] == TemplateType.image:
         img = Images.get(session, post_id=post_id).img
         post['img'] = img
-        return JSONResponse(status_code=200, content=dict(msg="GET_IMAGE_SUCCESS", post=post,
-                                                          character_info=character_info, comments=parent_comments))
+        return JSONResponse(status_code=200, content=dict(msg="GET_IMAGE_SUCCESS", post=post, comments=parent_comments))
     elif post['template'] == TemplateType.diary:
         diary = Diaries.get(session, post_id=post_id)
         post['title'] = diary.title
@@ -130,8 +130,7 @@ async def get_post(post_id: int, character_id: int = Header(None), session: Sess
         post['img'] = diary.img
         post['date'] = diary.date
         post['content'] = diary.content
-        return JSONResponse(status_code=200, content=dict(msg="GET_DIARY_SUCCESS", post=post,
-                                                          character_info=character_info, comments=parent_comments))
+        return JSONResponse(status_code=200, content=dict(msg="GET_DIARY_SUCCESS", post=post, comments=parent_comments))
     elif post['template'] == TemplateType.album:
         album = Albums.get(session, post_id=post_id)
         post['title'] = album.title
@@ -141,8 +140,7 @@ async def get_post(post_id: int, character_id: int = Header(None), session: Sess
         post['release_date'] = album.release_date
         tracks = Tracks.filter(session, album_id=album.id).all()
         post['tracks'] = [{"title": track.title, "lyric": track.lyric} for track in tracks]
-        return JSONResponse(status_code=200, content=dict(msg="GET_ALBUM_SUCCESS", post=post,
-                                                          character_info=character_info, comments=parent_comments))
+        return JSONResponse(status_code=200, content=dict(msg="GET_ALBUM_SUCCESS", post=post, comments=parent_comments))
 
     elif post['template'] == TemplateType.list:
         list_ = Lists.get(session, post_id=post_id)
@@ -151,5 +149,4 @@ async def get_post(post_id: int, character_id: int = Header(None), session: Sess
         list_components = ListComponents.filter(session, list_id=list_.id).all()
         post['components'] = [{"title": component.title, "img": component.img, "content": component.content}
                               for component in list_components]
-        return JSONResponse(status_code=200, content=dict(msg="GET_LIST_SUCCESS", post=post,
-                                                          character_info=character_info, comments=parent_comments))
+        return JSONResponse(status_code=200, content=dict(msg="GET_LIST_SUCCESS", post=post, comments=parent_comments))
