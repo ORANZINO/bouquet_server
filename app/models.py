@@ -326,6 +326,7 @@ class CharacterMini(BaseModel):
 class CharacterCard(BaseModel):
     name: str
     profile_img: str
+    intro: str
 
     class Config:
         orm_mode = True
