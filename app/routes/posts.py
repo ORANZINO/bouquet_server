@@ -146,6 +146,7 @@ async def get_post(post_id: int, character_id: int = Header(None), session: Sess
         list_ = Lists.get(session, post_id=post_id)
         post['title'] = list_.title
         post['content'] = list_.content
+        post['img'] = list_.img
         list_components = ListComponents.filter(session, list_id=list_.id).all()
         post['components'] = [{"title": component.title, "img": component.img, "content": component.content}
                               for component in list_components]

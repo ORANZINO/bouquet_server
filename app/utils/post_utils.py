@@ -38,6 +38,7 @@ def process_post(character_id, post, session):
         list_ = Lists.get(session, post_id=post['id'])
         post['title'] = list_.title
         post['content'] = list_.content
+        post['img'] = list_.img
         list_components = ListComponents.filter(session, list_id=list_.id).all()
         post['components'] = [{"title": component.title, "img": component.img, "content": component.content}
                               for component in list_components]
