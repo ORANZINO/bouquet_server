@@ -39,12 +39,14 @@ class SnsType(str, Enum):
     google: str = "Google"
     apple: str = "Apple"
 
+
 class TemplateType(str, Enum):
     none: str = "None"
     image: str = "Image"
     diary: str = "Diary"
     list: str = "List"
     album: str = "Album"
+
 
 class SexType(IntEnum, Enum):
     female: int = 0
@@ -289,15 +291,43 @@ class Comment(BaseModel):
     comment: str
     parent: int
 
+    class Config:
+        schema_extra = {
+            "example": {
+                "post_id": 1,
+                "character_id": 1,
+                "comment": "이 노래를 불러보지만 내 진심이 닿을지 몰라",
+                "parent": 0
+            }
+        }
+
 
 class PostRow(BaseModel):
     id: int
     created_at: datetime
     updated_at: datetime
     character_id: int
-    character_name: str
     template: TemplateType
     text: str
+
+    class Config:
+        orm_mode = True
+
+
+class CharacterMini(BaseModel):
+    name: str
+    profile_img: str
+
+    class Config:
+        orm_mode = True
+
+
+class CommentMini(BaseModel):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    comment: str
+    parent: int
 
     class Config:
         orm_mode = True
