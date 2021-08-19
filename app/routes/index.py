@@ -15,23 +15,7 @@ router = APIRouter()
 
 
 @router.get("/")
-async def index(character_id: int = Header(None), session: Session = Depends(db.session)):
-
-    if character_id is None:
-        posts = session.query(Posts).order_by(Posts.created_at.desc()).limit(10).all()
-    else:
-        followees = Follows.filter(session, follower_id=character_id).all()
-        followees = [f.character_id for f in followees]
-        posts = session.query(Posts).filter(Posts.character_id.in_(followees)).order_by(Posts.created_at.desc())\
-            .limit(10).all()
-
-    posts = [process_post(character_id, post, session) for post in posts]
-
-    return JSONResponse(status_code=200, content=dict(msg="GET_FEED_SUCCESS", posts=posts))
-
-
-@router.get("/{page_num}")
-async def index(page_num: int = 1, character_id: int = Header(None), session: Session = Depends(db.session)):
+async def index(page_num: int = Header(1), character_id: int = Header(None), session: Session = Depends(db.session)):
 
     if character_id is None:
         posts = session.query(Posts).order_by(Posts.created_at.desc()).offset((page_num - 1) * 10).limit(10).all()
