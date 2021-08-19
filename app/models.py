@@ -337,6 +337,8 @@ class CommentMini(BaseModel):
     updated_at: datetime
     comment: str
     parent: int
+    deleted: bool
+    num_sunshines: int
 
     class Config:
         orm_mode = True
