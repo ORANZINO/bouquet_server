@@ -309,6 +309,7 @@ class PostRow(BaseModel):
     character_id: int
     template: TemplateType
     text: str
+    num_sunshines: int
 
     class Config:
         orm_mode = True

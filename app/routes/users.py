@@ -1,19 +1,10 @@
-from typing import List, Optional
-from collections import defaultdict
-from uuid import uuid4
-
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.database.conn import db
-from app.database.schema import Users, Characters, CharacterHates, CharacterLikes
-from app import models as m
-from app.errors import exceptions as ex
-import string
-import base64
-import secrets
+from app.database.schema import Users
 
 from app.models import UserMe, UserUpdate
 
