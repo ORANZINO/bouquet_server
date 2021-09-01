@@ -79,7 +79,7 @@ async def register(sns_type: SnsType, reg_info: UserRegister, session: Session =
         if is_exist:
             return JSONResponse(status_code=400, content=dict(msg="EMAIL_EXISTS"))
         hash_pw = bcrypt.hashpw(reg_info.pw.encode("utf-8"), bcrypt.gensalt())
-        new_user = Users.create(session, auto_commit=True, pw=hash_pw, email=reg_info.email, name=reg_info.name, profile_img=reg_info.profile_img, sns_type=SnsType.email)
+        new_user = Users.create(session, auto_commit=True, pw=hash_pw, email=reg_info.email, name=reg_info.name, profile_img=reg_info.profile_img, sns_type='Email')
         token = dict(Authorization=f"Bearer {create_access_token(data=UserToken.from_orm(new_user).dict(exclude={'pw', 'marketing_agree'}),)}")
         return token
     return JSONResponse(status_code=404, content=dict(msg="NOT_SUPPORTED"))
