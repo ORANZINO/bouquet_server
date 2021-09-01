@@ -6,6 +6,10 @@ from pydantic.main import BaseModel
 from pydantic.networks import EmailStr, IPvAnyAddress
 
 
+class Message(BaseModel):
+    message: str
+
+
 class Duplicated(BaseModel):
     duplicated: bool
 

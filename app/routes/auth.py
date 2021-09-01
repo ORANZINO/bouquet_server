@@ -11,7 +11,7 @@ from starlette.responses import JSONResponse
 from app.common.consts import JWT_SECRET, JWT_ALGORITHM
 from app.database.conn import db
 from app.database.schema import Users, Characters
-from app.models import SnsType, Token, UserToken, UserRegister, UserLogin, Email, UserName, CharacterName, Duplicated
+from app.models import SnsType, Token, UserToken, UserRegister, UserLogin, Email, UserName, CharacterName, Duplicated, Message
 
 """
 1. 구글 로그인을 위한 구글 앱 준비 (구글 개발자 도구)
@@ -50,21 +50,21 @@ async def check_email(email: Email = Body(...), session: Session = Depends(db.se
     return {"duplicated": bool(user)}
 
 
-@router.post('/user/check', status_code=200)
+@router.post('/user/check', status_code=200, response_model=Duplicated)
 async def check_user_name(user_name: UserName = Body(...), session: Session = Depends(db.session)):
     user = Users.get(session, name=user_name.user_name)
     return {"duplicated": bool(user)}
 
 
-@router.post('/character/check', status_code=200)
+@router.post('/character/check', status_code=200, response_model=Duplicated)
 async def check_character_name(character_name: CharacterName = Body(...), session: Session = Depends(db.session)):
     character = Characters.get(session, name=character_name.character_name)
     return {"duplicated": bool(character)}
 
 
 @router.post("/register/{sns_type}", status_code=201, response_model=Token, responses={
-    400: dict(msg="EMAIL_EXISTS"),
-    404: dict(msg="NOT_SUPPORTED")
+    400: dict(description="Given E-mail already exists", model=Message),
+    404: dict(description="Given SNS type is not supported", model=Message)
 })
 async def register(sns_type: SnsType, reg_info: UserRegister, session: Session = Depends(db.session)):
     """
@@ -86,8 +86,8 @@ async def register(sns_type: SnsType, reg_info: UserRegister, session: Session =
 
 
 @router.post("/login/{sns_type}", status_code=200, response_model=Token, responses={
-    400: dict(msg="NO_MATCH_USER"),
-    404: dict(msg="NOT_SUPPORTED")
+    400: dict(description="Wrong ID or PW", model=Message),
+    404: dict(description="Given SNS type is not supported", model=Message)
 })
 async def login(sns_type: SnsType, user_info: UserLogin = Body(...)):
     if sns_type == SnsType.email:
