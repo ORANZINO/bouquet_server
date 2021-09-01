@@ -6,38 +6,36 @@ from pydantic.main import BaseModel
 from pydantic.networks import EmailStr, IPvAnyAddress
 
 
-class UserLogin(BaseModel):
-    email: EmailStr = None
-    pw: str = None
+class Duplicated(BaseModel):
+    duplicated: bool
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "email": "oranz@naver.com",
-                "pw": "1234",
-            }
-        }
+
+class Email(BaseModel):
+    email: EmailStr = Field(..., example='oranz@naver.com')
+
+
+class UserName(BaseModel):
+    user_name: str = Field(..., example='고팡서')
+
+
+class CharacterName(BaseModel):
+    character_name: str = Field(..., example='고광남')
+
+
+class UserLogin(BaseModel):
+    email: EmailStr = Field(..., example='oranz@naver.com')
+    pw: str = Field(..., example='12345678')
 
 
 class UserRegister(UserLogin):
-    profile_img: str
-    name: str
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "email": "oranz@naver.com",
-                "pw": "1234",
-                "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-                "name": "오란지"
-            }
-        }
+    profile_img: str = Field(..., example="https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg")
+    name: str = Field(..., example="오란지")
 
 
 class SnsType(str, Enum):
-    email: str = "Email"
-    google: str = "Google"
-    apple: str = "Apple"
+    email: str = "email"
+    google: str = "google"
+    apple: str = "apple"
 
 
 class TemplateType(str, Enum):
