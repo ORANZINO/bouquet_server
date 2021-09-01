@@ -5,39 +5,66 @@ from pydantic import Field
 from pydantic.main import BaseModel
 from pydantic.networks import EmailStr, IPvAnyAddress
 
+# For Auth
+
+
+class Message(BaseModel):
+    msg: str
+
+
+class Duplicated(BaseModel):
+    duplicated: bool
+
+
+class Email(BaseModel):
+    email: EmailStr = Field(..., example='oranz@naver.com')
+
+
+class UserName(BaseModel):
+    user_name: str = Field(..., example='고팡서')
+
+
+class CharacterName(BaseModel):
+    character_name: str = Field(..., example='고광남')
+
 
 class UserLogin(BaseModel):
-    email: EmailStr = None
-    pw: str = None
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "email": "oranz@naver.com",
-                "pw": "1234",
-            }
-        }
+    email: EmailStr = Field(..., example='oranz@naver.com')
+    pw: str = Field(..., example='12345678')
 
 
 class UserRegister(UserLogin):
-    profile_img: str
-    name: str
+    profile_img: str = Field(..., example="https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg")
+    name: str = Field(..., example="오란지")
+
+
+# For User
+
+
+class UserMe(BaseModel):
+    id: int = Field(..., example=1)
+    email: EmailStr = Field(..., example="oranz@naver.com")
+    name: str = Field(..., example="오태진")
+    profile_img: str = Field(..., example="https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg")
+    sns_type: str = Field(..., example="Email")
 
     class Config:
-        schema_extra = {
-            "example": {
-                "email": "oranz@naver.com",
-                "pw": "1234",
-                "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-                "name": "오란지"
-            }
-        }
+        orm_mode = True
+
+
+class UserUpdate(BaseModel):
+    name: str = Field(None, example="오태진")
+    profile_img: str = Field(None, example="https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg")
 
 
 class SnsType(str, Enum):
-    email: str = "Email"
-    google: str = "Google"
-    apple: str = "Apple"
+    email: str = "email"
+    google: str = "google"
+    apple: str = "apple"
+
+
+class Token(BaseModel):
+    Authorization: str = None
 
 
 class TemplateType(str, Enum):
@@ -51,10 +78,6 @@ class TemplateType(str, Enum):
 class SexType(IntEnum, Enum):
     female: int = 0
     male: int = 1
-
-
-class Token(BaseModel):
-    Authorization: str = None
 
 
 class MessageOk(BaseModel):
@@ -81,28 +104,7 @@ class UserToken(BaseModel):
         }
 
 
-class UserMe(BaseModel):
-    id: int
-    email: EmailStr = None
-    name: str = None
-    profile_img: str = None
-    sns_type: str = None
 
-    class Config:
-        orm_mode = True
-
-
-class UserUpdate(BaseModel):
-    name: str = None
-    profile_img: str = None
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-                "name": "오태진"
-            }
-        }
 
 
 class CharacterMe(BaseModel):

@@ -27,9 +27,6 @@ def create_app():
     app = FastAPI()
     conf_dict = asdict(c)
     db.init_app(app, **conf_dict)
-    # 데이터 베이스 이니셜라이즈
-
-    # 레디스 이니셜라이즈
 
     # 미들웨어 정의
     app.add_middleware(middleware_class=BaseHTTPMiddleware, dispatch=access_control)
