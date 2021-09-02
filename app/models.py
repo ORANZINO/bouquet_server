@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum, IntEnum
-from typing import List
+from typing import List, Optional
 from pydantic import Field
 from pydantic.main import BaseModel
 from pydantic.networks import EmailStr, IPvAnyAddress
@@ -38,6 +38,10 @@ class UserRegister(UserLogin):
     name: str = Field(..., example="오란지")
 
 
+class Token(BaseModel):
+    Authorization: str = None
+
+
 # For User
 
 
@@ -53,8 +57,8 @@ class UserMe(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    name: str = Field(None, example="오태진")
-    profile_img: str = Field(None, example="https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg")
+    name: Optional[str] = Field(None)
+    profile_img: Optional[str] = Field(None)
 
 
 class SnsType(str, Enum):
@@ -63,48 +67,11 @@ class SnsType(str, Enum):
     apple: str = "apple"
 
 
-class Token(BaseModel):
-    Authorization: str = None
+#  For Character
 
 
-class TemplateType(str, Enum):
-    none: str = "None"
-    image: str = "Image"
-    diary: str = "Diary"
-    list: str = "List"
-    album: str = "Album"
-
-
-class SexType(IntEnum, Enum):
-    female: int = 0
-    male: int = 1
-
-
-class MessageOk(BaseModel):
-    message: str = Field(default="OK")
-
-
-class UserToken(BaseModel):
-    id: int
-    email: EmailStr = None
-    name: str = None
-    profile_img: str = None
-    sns_type: str = None
-
-    class Config:
-        orm_mode = True
-        schema_extra = {
-            "example": {
-                "id": 1,
-                "email": "oranz@naver.com",
-                "name": "오란지",
-                "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-                "sns_type": "Email"
-            }
-        }
-
-
-
+class ID(BaseModel):
+    id: int = Field(..., example=1)
 
 
 class CharacterMe(BaseModel):
@@ -117,8 +84,6 @@ class CharacterMe(BaseModel):
     tmi: str = None
     likes: List
     hates: List
-    num_followers: int
-    num_follows: int
 
     class Config:
         orm_mode = True
@@ -137,24 +102,17 @@ class CharacterMe(BaseModel):
         }
 
 
-class CharacterRow(BaseModel):
-    id: int
-    name: str
-    profile_img: str
-    birth: int
-    job: str
-    nationality: str
-    intro: str
-    tmi: str = None
-    num_followers: int
-    num_follows: int
-
-    class Config:
-        orm_mode = True
-
-
-class CharacterUpdate(CharacterMe):
-    id: int
+class CharacterUpdate(BaseModel):
+    id: int = Field(...)
+    name: Optional[str] = Field(None)
+    profile_img: Optional[str] = Field(None)
+    birth: Optional[int] = Field(None)
+    job: Optional[str] = Field(None)
+    nationality: Optional[str] = Field(None)
+    intro: Optional[str] = Field(None)
+    tmi: Optional[str] = Field(None)
+    likes: Optional[List] = Field(None)
+    hates: Optional[List] = Field(None)
 
     class Config:
         orm_mode = True
@@ -174,28 +132,27 @@ class CharacterUpdate(CharacterMe):
         }
 
 
-class CharacterOther(BaseModel):
-    name: str
-    profile_img: str
-    birth: int
-    job: str
-    nationality: str
-    intro: str
-    tmi: str = None
-    user_id: int
-    num_followers: int
-    num_follows: int
-
-    class Config:
-        orm_mode = True
+class CharacterList(BaseModel):
+    characters: List[CharacterUpdate] = Field(...)
 
 
 class FollowInfo(BaseModel):
-    character_id: int
-    follower_id: int
+    character_id: int = Field(..., example=1)
+    follower_id: int = Field(..., example=3)
 
     class Config:
         orm_mode = True
+
+
+# For Post
+
+
+class TemplateType(str, Enum):
+    none: str = "None"
+    image: str = "Image"
+    diary: str = "Diary"
+    list: str = "List"
+    album: str = "Album"
 
 
 class Post(BaseModel):
@@ -351,3 +308,34 @@ class CommentMini(BaseModel):
 
     class Config:
         orm_mode = True
+
+# For Imgs
+
+
+class SexType(IntEnum, Enum):
+    female: int = 0
+    male: int = 1
+
+# For Auth
+
+
+class UserToken(BaseModel):
+    id: int
+    email: EmailStr = None
+    name: str = None
+    profile_img: str = None
+    sns_type: str = None
+
+    class Config:
+        orm_mode = True
+        schema_extra = {
+            "example": {
+                "id": 1,
+                "email": "oranz@naver.com",
+                "name": "오란지",
+                "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                "sns_type": "Email"
+            }
+        }
+
+

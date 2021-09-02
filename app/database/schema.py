@@ -188,8 +188,8 @@ class Users(Base, BaseMixin):
 
 class Follows(Base, BaseMixin):
     __tablename__ = "follows"
-    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False, primary_key=True)
-    follower_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False, primary_key=True)
+    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
+    follower_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
 
 
 class Posts(Base, BaseMixin):

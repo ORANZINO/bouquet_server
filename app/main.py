@@ -24,7 +24,7 @@ def create_app():
     :return:
     """
     c = conf()
-    app = FastAPI()
+    app = FastAPI(title="Bouquet")
     conf_dict = asdict(c)
     db.init_app(app, **conf_dict)
 
@@ -40,7 +40,7 @@ def create_app():
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=conf().TRUSTED_HOSTS, except_path=["/health"])
 
     # 라우터 정의
-    app.include_router(index.router)
+    app.include_router(index.router, tags=["Home"])
     app.include_router(auth.router, tags=["Authentication"])
     app.include_router(search.router, tags=["Search"])
     if conf().DEBUG:

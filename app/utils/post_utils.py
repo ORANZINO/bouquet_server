@@ -1,5 +1,5 @@
-from app.database.schema import Posts, Follows, Characters, PostSunshines, Images, Tracks, Albums, Diaries, Lists, ListComponents
-from app.models import Post, Image, Diary, Album, List, TemplateType, PostRow, Comment, CharacterRow, CharacterMini, CommentMini
+from app.database.schema import Characters, PostSunshines, Images, Tracks, Albums, Diaries, Lists, ListComponents
+from app.models import TemplateType, PostRow, CharacterMini
 from datetime import timedelta
 
 
@@ -14,33 +14,33 @@ def process_post(character_id, post, session):
     if character_id is not None:
         my_sunshine = bool(PostSunshines.get(session, post_id=post['id'], character_id=character_id))
     post['liked'] = my_sunshine
-
-    if post['template'] == TemplateType.image:
+    post['type'] = post['template']
+    post['template'] = dict()
+    if post['type'] == TemplateType.image:
         img = Images.get(session, post_id=post['id']).img
-        post['img'] = img
-    elif post['template'] == TemplateType.diary:
+        post['template']['img'] = img
+    elif post['type'] == TemplateType.diary:
         diary = Diaries.get(session, post_id=post['id'])
-        post['title'] = diary.title
-        post['weather'] = diary.weather
-        post['img'] = diary.img
-        post['date'] = diary.date
-        post['content'] = diary.content
-    elif post['template'] == TemplateType.album:
+        post['template']['title'] = diary.title
+        post['template']['weather'] = diary.weather
+        post['template']['img'] = diary.img
+        post['template']['date'] = diary.date
+        post['template']['content'] = diary.content
+    elif post['type'] == TemplateType.album:
         album = Albums.get(session, post_id=post['id'])
-        post['title'] = album.title
-        post['img'] = album.img
-        post['artist'] = album.artist
-        post['description'] = album.description
-        post['release_date'] = album.release_date
+        post['template']['title'] = album.title
+        post['template']['img'] = album.img
+        post['template']['artist'] = album.artist
+        post['template']['description'] = album.description
+        post['template']['release_date'] = album.release_date
         tracks = Tracks.filter(session, album_id=album.id).all()
-        post['tracks'] = [{"title": track.title, "lyric": track.lyric} for track in tracks]
-    elif post['template'] == TemplateType.list:
+        post['template']['tracks'] = [{"title": track.title, "lyric": track.lyric} for track in tracks]
+    elif post['type'] == TemplateType.list:
         list_ = Lists.get(session, post_id=post['id'])
-        post['title'] = list_.title
-        post['content'] = list_.content
-        post['img'] = list_.img
+        post['template']['title'] = list_.title
+        post['template']['content'] = list_.content
+        post['template']['img'] = list_.img
         list_components = ListComponents.filter(session, list_id=list_.id).all()
-        post['components'] = [{"title": component.title, "img": component.img, "content": component.content}
-                              for component in list_components]
+        post['template']['components'] = [{"title": component.title, "img": component.img, "content": component.content}
+                                          for component in list_components]
     return post
-
