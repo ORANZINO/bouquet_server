@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum, IntEnum
-from typing import List
+from typing import List, Optional
 from pydantic import Field
 from pydantic.main import BaseModel
 from pydantic.networks import EmailStr, IPvAnyAddress
@@ -38,6 +38,10 @@ class UserRegister(UserLogin):
     name: str = Field(..., example="오란지")
 
 
+class Token(BaseModel):
+    Authorization: str = None
+
+
 # For User
 
 
@@ -53,8 +57,8 @@ class UserMe(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    name: str = Field(None, example="오태진")
-    profile_img: str = Field(None, example="https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg")
+    name: Optional[str] = Field(None)
+    profile_img: Optional[str] = Field(None)
 
 
 class SnsType(str, Enum):
@@ -63,8 +67,81 @@ class SnsType(str, Enum):
     apple: str = "apple"
 
 
-class Token(BaseModel):
-    Authorization: str = None
+#  For Character
+
+
+class CharacterID(BaseModel):
+    character_id: int = Field(..., example=1)
+
+
+class CharacterMe(BaseModel):
+    name: str
+    profile_img: str
+    birth: int
+    job: str
+    nationality: str
+    intro: str
+    tmi: str = None
+    likes: List
+    hates: List
+
+    class Config:
+        orm_mode = True
+        schema_extra = {
+            "example": {
+                "name": "오란지",
+                "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                "birth": 19990601,
+                "job": "과일",
+                "nationality": "플로리다",
+                "intro": "상큼합니다.",
+                "tmi": "당도가 높은 편입니다.",
+                "likes": ["햇빛", "비옥한 토양", "해변가"],
+                "hates": ["비오는 곳", "낮은 당도", "사과(라이벌)"]
+            }
+        }
+
+
+class CharacterUpdate(BaseModel):
+    id: int = Field(...)
+    name: Optional[str] = Field(None)
+    profile_img: Optional[str] = Field(None)
+    birth: Optional[int] = Field(None)
+    job: Optional[str] = Field(None)
+    nationality: Optional[str] = Field(None)
+    intro: Optional[str] = Field(None)
+    tmi: Optional[str] = Field(None)
+    likes: Optional[List] = Field(None)
+    hates: Optional[List] = Field(None)
+
+    class Config:
+        orm_mode = True
+        schema_extra = {
+            "example": {
+                "id": 1,
+                "name": "오란지",
+                "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                "birth": 19990601,
+                "job": "과일",
+                "nationality": "플로리다",
+                "intro": "상큼합니다.",
+                "tmi": "당도가 높은 편입니다.",
+                "likes": ["햇빛", "비옥한 토양", "해변가"],
+                "hates": ["비오는 곳", "낮은 당도", "사과(라이벌)"]
+            }
+        }
+
+
+class CharacterList(BaseModel):
+    characters: List[CharacterUpdate] = Field(...)
+
+
+class FollowInfo(BaseModel):
+    character_id: int = Field(..., example=1)
+    follower_id: int = Field(..., example=3)
+
+    class Config:
+        orm_mode = True
 
 
 class TemplateType(str, Enum):
@@ -107,95 +184,13 @@ class UserToken(BaseModel):
 
 
 
-class CharacterMe(BaseModel):
-    name: str
-    profile_img: str
-    birth: int
-    job: str
-    nationality: str
-    intro: str
-    tmi: str = None
-    likes: List
-    hates: List
-    num_followers: int
-    num_follows: int
-
-    class Config:
-        orm_mode = True
-        schema_extra = {
-            "example": {
-                "name": "오란지",
-                "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-                "birth": 19990601,
-                "job": "과일",
-                "nationality": "플로리다",
-                "intro": "상큼합니다.",
-                "tmi": "당도가 높은 편입니다.",
-                "likes": ["햇빛", "비옥한 토양", "해변가"],
-                "hates": ["비오는 곳", "낮은 당도", "사과(라이벌)"]
-            }
-        }
 
 
-class CharacterRow(BaseModel):
-    id: int
-    name: str
-    profile_img: str
-    birth: int
-    job: str
-    nationality: str
-    intro: str
-    tmi: str = None
-    num_followers: int
-    num_follows: int
-
-    class Config:
-        orm_mode = True
 
 
-class CharacterUpdate(CharacterMe):
-    id: int
-
-    class Config:
-        orm_mode = True
-        schema_extra = {
-            "example": {
-                "id": 1,
-                "name": "오란지",
-                "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-                "birth": 19990601,
-                "job": "과일",
-                "nationality": "플로리다",
-                "intro": "상큼합니다.",
-                "tmi": "당도가 높은 편입니다.",
-                "likes": ["햇빛", "비옥한 토양", "해변가"],
-                "hates": ["비오는 곳", "낮은 당도", "사과(라이벌)"]
-            }
-        }
 
 
-class CharacterOther(BaseModel):
-    name: str
-    profile_img: str
-    birth: int
-    job: str
-    nationality: str
-    intro: str
-    tmi: str = None
-    user_id: int
-    num_followers: int
-    num_follows: int
 
-    class Config:
-        orm_mode = True
-
-
-class FollowInfo(BaseModel):
-    character_id: int
-    follower_id: int
-
-    class Config:
-        orm_mode = True
 
 
 class Post(BaseModel):
