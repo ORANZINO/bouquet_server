@@ -12,7 +12,7 @@ import string
 import base64
 import secrets
 
-from app.models import Post, Image, Diary, Album, List, TemplateType, PostRow, Comment, CharacterRow, CharacterMini, CommentMini
+from app.models import Post, Image, Diary, Album, List, TemplateType, PostRow, Comment, CharacterMini, CommentMini
 
 router = APIRouter(prefix='/post')
 
@@ -53,7 +53,7 @@ async def create_album(album: Album, session: Session = Depends(db.session)):
     new_post = Posts.create(session, True, **dict(post))
     tracks = album['tracks']
     del album['tracks']
-    album['artist'] = CharacterRow.from_orm(Characters.get(session, id=post['character_id'])).dict()['name']
+    album['artist'] = Characters.get(session, id=post['character_id']).name
     album = {k: album[k] for k in album if k not in post_keys}
     album['post_id'] = new_post.id
     new_album = Albums.create(session, True, **dict(album))
