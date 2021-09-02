@@ -3,39 +3,65 @@ from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-
+from app.utils.post_utils import process_post
 from app.database.conn import db
 from app.database.schema import Posts, Images, Albums, Diaries, Lists, ListComponents, Tracks, Comments, Characters, PostSunshines, CommentSunshines
 from datetime import timedelta
-from app.errors import exceptions as ex
-import string
-import base64
-import secrets
 
-from app.models import Post, Image, Diary, Album, List, TemplateType, PostRow, Comment, CharacterMini, CommentMini
+from app.models import Post, Image, Diary, Album, List, TemplateType, PostRow, Comment, CharacterMini, CommentMini, ID
 
 router = APIRouter(prefix='/post')
 
 post_keys = ["character_id", "template", "text"]
 
+post_responses = {
+    201: {
+      "id": 1,
+      "created_at": "2021-09-02T15:25:46",
+      "updated_at": "2021-09-02T15:25:46",
+      "template": {},
+      "text": "이것이 포스팅이다.",
+      "num_sunshines": 0,
+      "character_name": "오란지",
+      "character_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+      "liked": False,
+      "type": "None",
+      "comments": [
+        {
+          "name": "오란지",
+          "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+          "id": 1,
+          "created_at": "2021-09-02T15:26:31",
+          "updated_at": "2021-09-02T15:26:31",
+          "comment": "이 노래를 불러보지만 내 진심이 닿을지 몰라",
+          "parent": 0,
+          "deleted": False,
+          "num_sunshines": 0,
+          "liked": False,
+          "children": []
+        }
+      ]
+    }
+}
 
-@router.post('/')
+
+@router.post('', status_code=201, response_model=ID)
 async def create_post(post: Post, session: Session = Depends(db.session)):
     new_post = Posts.create(session, True, **dict(post))
-    return JSONResponse(status_code=201, content=dict(msg="CREATE_POST_SUCCESS", id=new_post.id))
+    return JSONResponse(status_code=201, content=dict(id=new_post.id))
 
 
-@router.post('/img')
+@router.post('/img', status_code=201, response_model=ID)
 async def create_image(image: Image, session: Session = Depends(db.session)):
     image = dict(image)
     post = {k: image[k] for k in image if k in post_keys}
     img = image['img']
     new_post = Posts.create(session, True, **dict(post))
     Images.create(session, True, img=img, post_id=new_post.id)
-    return JSONResponse(status_code=201, content=dict(msg="CREATE_IMAGE_SUCCESS", id=new_post.id))
+    return JSONResponse(status_code=201, content=dict(id=new_post.id))
 
 
-@router.post('/diary')
+@router.post('/diary', status_code=201, response_model=ID)
 async def create_diary(diary: Diary, session: Session = Depends(db.session)):
     diary = dict(diary)
     post = {k: diary[k] for k in diary if k in post_keys}
@@ -43,10 +69,10 @@ async def create_diary(diary: Diary, session: Session = Depends(db.session)):
     diary = {k: diary[k] for k in diary if k not in post_keys}
     diary['post_id'] = new_post.id
     Diaries.create(session, True, **dict(diary))
-    return JSONResponse(status_code=201, content=dict(msg="CREATE_DIARY_SUCCESS", id=new_post.id))
+    return JSONResponse(status_code=201, content=dict(id=new_post.id))
 
 
-@router.post('/album')
+@router.post('/album', status_code=201, response_model=ID)
 async def create_album(album: Album, session: Session = Depends(db.session)):
     album = dict(album)
     post = {k: album[k] for k in album if k in post_keys}
@@ -60,10 +86,10 @@ async def create_album(album: Album, session: Session = Depends(db.session)):
     for track in tracks:
         track['album_id'] = new_album.id
         Tracks.create(session, True, **dict(track))
-    return JSONResponse(status_code=201, content=dict(msg="CREATE_ALBUM_SUCCESS", id=new_post.id))
+    return JSONResponse(status_code=201, content=dict(id=new_post.id))
 
 
-@router.post('/list')
+@router.post('/list', status_code=201, response_model=ID)
 async def create_list(list_: List, session: Session = Depends(db.session)):
     list_ = dict(list_)
     post = {k: list_[k] for k in list_ if k in post_keys}
@@ -76,25 +102,18 @@ async def create_list(list_: List, session: Session = Depends(db.session)):
     for component in components:
         component['list_id'] = new_list.id
         ListComponents.create(session, True, **dict(component))
-    return JSONResponse(status_code=201, content=dict(msg="CREATE_LIST_SUCCESS", id=new_post.id))
+    return JSONResponse(status_code=201, content=dict(id=new_post.id))
 
 
-@router.post('/comment')
+@router.post('/comment', status_code=201, response_model=ID)
 async def create_comment(comment: Comment, session: Session = Depends(db.session)):
     new_comment = Comments.create(session, True, **dict(comment))
-    return JSONResponse(status_code=201, content=dict(msg="CREATE_COMMENT_SUCCESS", id=new_comment.id))
+    return JSONResponse(status_code=201, content=dict(id=new_comment.id))
 
 
-@router.get('/{post_id}')
+@router.get('/{post_id}', status_code=200, responses=post_responses)
 async def get_post(post_id: int, character_id: int = Header(None), session: Session = Depends(db.session)):
-    post = PostRow.from_orm(Posts.get(session, id=post_id)).dict()
-    post['created_at'] = (post['created_at'] + timedelta(hours=9)).isoformat()
-    post['updated_at'] = (post['updated_at'] + timedelta(hours=9)).isoformat()
-    character_info = CharacterMini.from_orm(Characters.get(session, id=post['character_id'])).dict()
-    post['character_name'] = character_info['name']
-    post['character_img'] = character_info['profile_img']
-    my_sunshine = bool(PostSunshines.get(session, post_id=post_id, character_id=character_id))
-    post['liked'] = my_sunshine
+    post = process_post(character_id, Posts.get(session, id=post_id), session)
     my_comment_sunshine = CommentSunshines.filter(session, post_id=post_id, character_id=character_id).all()
     my_comment_sunshine = [m.comment_id for m in my_comment_sunshine]
     parent_comments = session.query(Characters, Comments).filter(Comments.post_id == post_id, Comments.parent == 0)\
@@ -118,37 +137,5 @@ async def get_post(post_id: int, character_id: int = Header(None), session: Sess
             parent_comments[i]['children'][j]['updated_at'] = (c['updated_at'] + timedelta(hours=9)).isoformat()
     del post['character_id']
     post['comments'] = parent_comments
-    if post['template'] == TemplateType.none:
-        return JSONResponse(status_code=200, content=dict(msg="GET_POST_SUCCESS", post=post))
-    elif post['template'] == TemplateType.image:
-        img = Images.get(session, post_id=post_id).img
-        post['img'] = img
-        return JSONResponse(status_code=200, content=dict(msg="GET_IMAGE_SUCCESS", post=post))
-    elif post['template'] == TemplateType.diary:
-        diary = Diaries.get(session, post_id=post_id)
-        post['title'] = diary.title
-        post['weather'] = diary.weather
-        post['img'] = diary.img
-        post['date'] = diary.date
-        post['content'] = diary.content
-        return JSONResponse(status_code=200, content=dict(msg="GET_DIARY_SUCCESS", post=post))
-    elif post['template'] == TemplateType.album:
-        album = Albums.get(session, post_id=post_id)
-        post['title'] = album.title
-        post['img'] = album.img
-        post['artist'] = album.artist
-        post['description'] = album.description
-        post['release_date'] = album.release_date
-        tracks = Tracks.filter(session, album_id=album.id).all()
-        post['tracks'] = [{"title": track.title, "lyric": track.lyric} for track in tracks]
-        return JSONResponse(status_code=200, content=dict(msg="GET_ALBUM_SUCCESS", post=post))
+    return JSONResponse(status_code=200, content=post)
 
-    elif post['template'] == TemplateType.list:
-        list_ = Lists.get(session, post_id=post_id)
-        post['title'] = list_.title
-        post['content'] = list_.content
-        post['img'] = list_.img
-        list_components = ListComponents.filter(session, list_id=list_.id).all()
-        post['components'] = [{"title": component.title, "img": component.img, "content": component.content}
-                              for component in list_components]
-        return JSONResponse(status_code=200, content=dict(msg="GET_LIST_SUCCESS", post=post))

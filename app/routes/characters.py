@@ -15,7 +15,7 @@ import string
 import base64
 import secrets
 
-from app.models import CharacterList, CharacterUpdate, CharacterMe, CharacterID, FollowInfo, Message
+from app.models import CharacterList, CharacterUpdate, CharacterMe, ID, FollowInfo, Message
 
 router = APIRouter(prefix='/character')
 
@@ -46,7 +46,7 @@ update_examples = {
 }
 
 
-@router.post('', status_code=201, response_model=CharacterID, responses={
+@router.post('', status_code=201, response_model=ID, responses={
     202: dict(description="Given character name already exists", model=Message)
 })
 async def create_my_character(request: Request, character: CharacterMe, session: Session = Depends(db.session)):
@@ -64,7 +64,7 @@ async def create_my_character(request: Request, character: CharacterMe, session:
         CharacterLikes.create(session, True, like=like, character_id=character_id)
     for hate in character['hates']:
         CharacterHates.create(session, True, hate=hate, character_id=character_id)
-    return JSONResponse(status_code=201, content=dict(character_id=character_id))
+    return JSONResponse(status_code=201, content=dict(id=character_id))
 
 
 @router.get('/user/{user_name}', status_code=200, response_model=CharacterList, responses={

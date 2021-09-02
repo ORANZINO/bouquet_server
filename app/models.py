@@ -70,8 +70,8 @@ class SnsType(str, Enum):
 #  For Character
 
 
-class CharacterID(BaseModel):
-    character_id: int = Field(..., example=1)
+class ID(BaseModel):
+    id: int = Field(..., example=1)
 
 
 class CharacterMe(BaseModel):
@@ -144,53 +144,15 @@ class FollowInfo(BaseModel):
         orm_mode = True
 
 
+# For Post
+
+
 class TemplateType(str, Enum):
     none: str = "None"
     image: str = "Image"
     diary: str = "Diary"
     list: str = "List"
     album: str = "Album"
-
-
-class SexType(IntEnum, Enum):
-    female: int = 0
-    male: int = 1
-
-
-class MessageOk(BaseModel):
-    message: str = Field(default="OK")
-
-
-class UserToken(BaseModel):
-    id: int
-    email: EmailStr = None
-    name: str = None
-    profile_img: str = None
-    sns_type: str = None
-
-    class Config:
-        orm_mode = True
-        schema_extra = {
-            "example": {
-                "id": 1,
-                "email": "oranz@naver.com",
-                "name": "오란지",
-                "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-                "sns_type": "Email"
-            }
-        }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class Post(BaseModel):
@@ -346,3 +308,34 @@ class CommentMini(BaseModel):
 
     class Config:
         orm_mode = True
+
+# For Imgs
+
+
+class SexType(IntEnum, Enum):
+    female: int = 0
+    male: int = 1
+
+# For Auth
+
+
+class UserToken(BaseModel):
+    id: int
+    email: EmailStr = None
+    name: str = None
+    profile_img: str = None
+    sns_type: str = None
+
+    class Config:
+        orm_mode = True
+        schema_extra = {
+            "example": {
+                "id": 1,
+                "email": "oranz@naver.com",
+                "name": "오란지",
+                "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                "sns_type": "Email"
+            }
+        }
+
+
