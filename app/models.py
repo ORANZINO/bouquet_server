@@ -81,9 +81,9 @@ class CharacterMe(BaseModel):
     job: str
     nationality: str
     intro: str
-    tmi: str = None
-    likes: List
-    hates: List
+    tmi: Optional[str] = None
+    likes: List[str]
+    hates: List[str]
 
     class Config:
         orm_mode = True
@@ -111,8 +111,8 @@ class CharacterUpdate(BaseModel):
     nationality: Optional[str] = Field(None)
     intro: Optional[str] = Field(None)
     tmi: Optional[str] = Field(None)
-    likes: Optional[List] = Field(None)
-    hates: Optional[List] = Field(None)
+    likes: Optional[List[str]] = Field(None)
+    hates: Optional[List[str]] = Field(None)
 
     class Config:
         orm_mode = True
@@ -132,8 +132,43 @@ class CharacterUpdate(BaseModel):
         }
 
 
+class CharacterInfo(CharacterMe):
+    id: int
+    num_follows: int
+    num_followers: int
+    user_id: int
+
+    class Config:
+        orm_mode = True
+        schema_extra = {
+            "example": {
+              "name": "오란지",
+              "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+              "birth": 19990601,
+              "job": "과일",
+              "nationality": "플로리다",
+              "intro": "상큼합니다.",
+              "tmi": "당도가 높은 편입니다.",
+              "likes": [
+                "햇빛",
+                "비옥한 토양",
+                "해변가"
+              ],
+              "hates": [
+                "비오는 곳",
+                "낮은 당도",
+                "사과(라이벌)"
+              ],
+              "id": 1,
+              "num_follows": 0,
+              "num_followers": 1,
+              "user_id": 1
+            }
+        }
+
+
 class CharacterList(BaseModel):
-    characters: List[CharacterUpdate] = Field(...)
+    characters: List[CharacterInfo] = Field(...)
 
 
 class FollowInfo(BaseModel):

@@ -15,7 +15,7 @@ import string
 import base64
 import secrets
 
-from app.models import CharacterList, CharacterUpdate, CharacterMe, ID, FollowInfo, Message
+from app.models import CharacterList, CharacterUpdate, CharacterMe, ID, FollowInfo, Message, CharacterInfo
 
 router = APIRouter(prefix='/character')
 
@@ -87,11 +87,11 @@ async def get_user_characters(user_name: str, session: Session = Depends(db.sess
     for i, character in enumerate(characters):
         setattr(characters[i], 'likes', likes_dict[character.id])
         setattr(characters[i], 'hates', hates_dict[character.id])
-    characters = [CharacterUpdate.from_orm(character).dict() for character in characters]
+    characters = [CharacterInfo.from_orm(character).dict() for character in characters]
     return JSONResponse(status_code=200, content=dict(characters=characters))
 
 
-@router.get('/{character_name}', status_code=200, response_model=CharacterUpdate, responses={
+@router.get('/{character_name}', status_code=200, response_model=CharacterInfo, responses={
     404: dict(description="No such character", model=Message)
 })
 async def get_character(character_name: str, session: Session = Depends(db.session)):
@@ -102,7 +102,7 @@ async def get_character(character_name: str, session: Session = Depends(db.sessi
     hates = CharacterHates.filter(session, character_id=character.id).all()
     setattr(character, 'likes', [like.like for like in likes])
     setattr(character, 'hates', [hate.hate for hate in hates])
-    character = CharacterUpdate.from_orm(character).dict()
+    character = CharacterInfo.from_orm(character).dict()
     return JSONResponse(status_code=200, content=character)
 
 
