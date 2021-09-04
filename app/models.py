@@ -1,7 +1,8 @@
+from typing_extensions import TypedDict
 from datetime import datetime
 from enum import Enum, IntEnum
-from typing import List, Optional
-from pydantic import Field
+from typing import List, Optional, Union
+from pydantic import Field, PositiveInt, AnyHttpUrl, conint, constr, conlist
 from pydantic.main import BaseModel
 from pydantic.networks import EmailStr, IPvAnyAddress
 
@@ -9,7 +10,7 @@ from pydantic.networks import EmailStr, IPvAnyAddress
 
 
 class Message(BaseModel):
-    msg: str
+    msg: constr(strict=True)
 
 
 class Duplicated(BaseModel):
@@ -21,69 +22,75 @@ class Email(BaseModel):
 
 
 class UserName(BaseModel):
-    user_name: str = Field(..., example='고팡서')
+    user_name: constr(strict=True) = Field(..., example='고팡서')
 
 
 class CharacterName(BaseModel):
-    character_name: str = Field(..., example='고광남')
+    character_name: constr(strict=True) = Field(..., example='고광남')
 
 
 class UserLogin(BaseModel):
     email: EmailStr = Field(..., example='oranz@naver.com')
-    pw: str = Field(..., example='12345678')
+    pw: constr(strict=True) = Field(..., example='12345678')
 
 
 class UserRegister(UserLogin):
-    profile_img: str = Field(..., example="https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg")
-    name: str = Field(..., example="오란지")
+    profile_img: AnyHttpUrl = Field(..., example="https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg")
+    name: constr(strict=True) = Field(..., example="오란지")
 
 
 class Token(BaseModel):
-    Authorization: str = None
+    Authorization: constr(strict=True) = None
 
 
 # For User
-
-
-class UserMe(BaseModel):
-    id: int = Field(..., example=1)
-    email: EmailStr = Field(..., example="oranz@naver.com")
-    name: str = Field(..., example="오태진")
-    profile_img: str = Field(..., example="https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg")
-    sns_type: str = Field(..., example="Email")
-
-    class Config:
-        orm_mode = True
-
-
-class UserUpdate(BaseModel):
-    name: Optional[str] = Field(None)
-    profile_img: Optional[str] = Field(None)
-
-
 class SnsType(str, Enum):
     email: str = "email"
     google: str = "google"
     apple: str = "apple"
 
 
+class UserMe(BaseModel):
+    id: PositiveInt = Field(..., example=1)
+    email: EmailStr = Field(..., example="oranz@naver.com")
+    name: constr(strict=True) = Field(..., example="오태진")
+    profile_img: AnyHttpUrl = Field(..., example="https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg")
+    sns_type: SnsType = Field(..., example="email")
+
+    class Config:
+        orm_mode = True
+
+
+class UserUpdate(BaseModel):
+    name: Optional[constr(strict=True)] = Field(None)
+    profile_img: Optional[AnyHttpUrl] = Field(None)
+
+
+class UserMini(BaseModel):
+    name: constr(strict=True) = Field(..., example='오태진')
+    profile_img: AnyHttpUrl = Field(..., example="https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg")
+
+    class Config:
+        orm_mode = True
+
+
 #  For Character
 
 
 class ID(BaseModel):
-    id: int = Field(..., example=1)
+    id: PositiveInt = Field(..., example=1)
 
 
 class CharacterMe(BaseModel):
-    name: str
-    profile_img: str
-    birth: int
-    job: str
-    nationality: str
-    intro: str
-    tmi: Optional[str] = None
-    likes: List[str]
-    hates: List[str]
+    name: constr(strict=True)
+    profile_img: AnyHttpUrl
+    birth: conint(strict=True, gt=0, lt=100000000)
+    job: constr(strict=True)
+    nationality: constr(strict=True)
+    intro: constr(strict=True)
+    tmi: Optional[constr(strict=True)] = None
+    likes: List[constr(strict=True)]
+    hates: List[constr(strict=True)]
 
     class Config:
         orm_mode = True
@@ -103,16 +110,16 @@ class CharacterMe(BaseModel):
 
 
 class CharacterUpdate(BaseModel):
-    id: int = Field(...)
-    name: Optional[str] = Field(None)
-    profile_img: Optional[str] = Field(None)
-    birth: Optional[int] = Field(None)
-    job: Optional[str] = Field(None)
-    nationality: Optional[str] = Field(None)
-    intro: Optional[str] = Field(None)
-    tmi: Optional[str] = Field(None)
-    likes: Optional[List[str]] = Field(None)
-    hates: Optional[List[str]] = Field(None)
+    id: PositiveInt = Field(...)
+    name: Optional[constr(strict=True)] = Field(None)
+    profile_img: Optional[AnyHttpUrl] = Field(None)
+    birth: Optional[conint(strict=True, gt=0, lt=100000000)] = None
+    job: Optional[constr(strict=True)] = Field(None)
+    nationality: Optional[constr(strict=True)] = Field(None)
+    intro: Optional[constr(strict=True)] = Field(None)
+    tmi: Optional[constr(strict=True)] = Field(None)
+    likes: Optional[List[constr(strict=True)]] = Field(None)
+    hates: Optional[List[constr(strict=True)]] = Field(None)
 
     class Config:
         orm_mode = True
@@ -133,10 +140,10 @@ class CharacterUpdate(BaseModel):
 
 
 class CharacterInfo(CharacterMe):
-    id: int
-    num_follows: int
-    num_followers: int
-    user_id: int
+    id: PositiveInt
+    num_follows: conint(strict=True, ge=0)
+    num_followers: conint(strict=True, ge=0)
+    user_info: UserMini
 
     class Config:
         orm_mode = True
@@ -162,134 +169,105 @@ class CharacterInfo(CharacterMe):
               "id": 1,
               "num_follows": 0,
               "num_followers": 1,
-              "user_id": 1
+              "user_info": {
+                  "name": "오태진",
+                  "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
+              }
             }
         }
 
 
-class CharacterList(BaseModel):
-    characters: List[CharacterInfo] = Field(...)
+class CharacterCard(BaseModel):
+    name: constr(strict=True) = Field(..., example='오란지')
+    profile_img: AnyHttpUrl = Field(..., example='https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg')
+    intro: constr(strict=True) = Field(..., example='상큼합니다.')
+
+    class Config:
+        orm_mode = True
+
+
+class UserInfo(UserMini):
+    num_followers: conint(strict=True, ge=0) = Field(..., example=1)
+    num_characters: conint(strict=True, ge=0) = Field(..., example=1)
+
+
+class UserCharacters(BaseModel):
+    user_info: UserInfo
+    characters: List[Optional[CharacterCard]]
+
+    class Config:
+        orm_mode = True
 
 
 class FollowInfo(BaseModel):
-    character_id: int = Field(..., example=1)
-    follower_id: int = Field(..., example=3)
+    character_id: PositiveInt = Field(..., example=1)
+    follower_id: PositiveInt = Field(..., example=3)
 
     class Config:
         orm_mode = True
 
 
 # For Post
+class NoTemplate(BaseModel):
+    type: str = Field("None", const=True)
 
 
-class TemplateType(str, Enum):
-    none: str = "None"
-    image: str = "Image"
-    diary: str = "Diary"
-    list: str = "List"
-    album: str = "Album"
+class ImageTemplate(BaseModel):
+    type: str = Field("Image", const=True)
+    img: AnyHttpUrl
+
+
+class DiaryTemplate(BaseModel):
+    type: str = Field("Diary", const=True)
+    title: constr(strict=True)
+    weather: constr(strict=True)
+    img: Optional[AnyHttpUrl]
+    date: conint(strict=True, gt=0, lt=100000000)
+    content: constr(strict=True)
+
+
+class AlbumTrack(TypedDict):
+    title: str
+    lyric: Optional[str]
+
+
+class AlbumTemplate(BaseModel):
+    type: str = Field("Album", const=True)
+    title: constr(strict=True)
+    img: AnyHttpUrl
+    description: Optional[constr(strict=True)]
+    release_date: conint(strict=True, gt=0, lt=100000000)
+    tracks: List[AlbumTrack]
+
+
+class ListComponent(TypedDict):
+    title: str
+    img: Optional[AnyHttpUrl]
+    content: Optional[str]
+
+
+class ListTemplate(BaseModel):
+    type: str = Field("List", const=True)
+    title: constr(strict=True)
+    content: Optional[constr(strict=True)]
+    img: Optional[AnyHttpUrl]
+    components: List[ListComponent]
 
 
 class Post(BaseModel):
-    character_id: int
-    template: TemplateType = "None"
-    text: str
+    character_id: PositiveInt = Field(..., example=1)
+    text: Optional[constr(strict=True)] = Field(None, example='ㅎㅇ')
+    template: Union[NoTemplate, ImageTemplate, DiaryTemplate, AlbumTemplate, ListTemplate]
 
     class Config:
         orm_mode = True
-        schema_extra = {
-            "example": {
-                "character_id": 1,
-                "template": "None",
-                "text": "이것이 포스팅이다.",
-            }
-        }
-
-
-class Image(Post):
-    template: TemplateType = "Image"
-    img: str
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "character_id": 1,
-                "text": "orange pic",
-                "template": "Image",
-                "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-            }
-        }
-
-
-class Diary(Post):
-    template: TemplateType = "Diary"
-    title: str
-    weather: str
-    img: str
-    date: int
-    content: str
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "character_id": 1,
-                "text": "오늘은 일기를 썼다.",
-                "template": "Diary",
-                "title": "오늘의 일기",
-                "weather": "맑음",
-                "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-                "date": 20210816,
-                "content": "오늘은 밥을 먹었다. 참 재미있었다."
-            }
-        }
-
-
-class Album(Post):
-    template: TemplateType = "Album"
-    title: str
-    img: str
-    release_date: int
-    tracks: List
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "character_id": 1,
-                "text": "새 앨범이 나왔어용",
-                "template": "Album",
-                "description": "열심히 준비한 앨범입니다!",
-                "title": "this is hiphop",
-                "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-                "release_date": 20210821,
-                "tracks": [{"title": "배신의 십자가", "lyric": "으아으아으아으아으아으아"}, {"title": "달콤한 오렌지", "lyric": "우와우와우와우와"}]
-            }
-        }
-
-
-class List(Post):
-    template: TemplateType = "List"
-    title: str
-    content: str
-    components: List
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "character_id": 1,
-                "text": "제가 좋아하는 것들입니당",
-                "template": "List",
-                "title": "My Favorites",
-                "content": "these are what I like",
-                "components": [{"title": "Orange", "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg", "content": "오렌지 좋아함 ㅎㅎ"}]
-            }
-        }
 
 
 class Comment(BaseModel):
-    post_id: int
-    character_id: int
-    comment: str
-    parent: int
+    post_id: PositiveInt
+    character_id: PositiveInt
+    comment: constr(strict=True)
+    parent: conint(strict=True, ge=0)
 
     class Config:
         schema_extra = {
@@ -302,47 +280,73 @@ class Comment(BaseModel):
         }
 
 
+class CharacterMini(BaseModel):
+    name: constr(strict=True)
+    profile_img: AnyHttpUrl
+
+    class Config:
+        orm_mode = True
+
+
+class ChildComment(BaseModel):
+    character_info: CharacterMini
+    id: PositiveInt
+    created_at: constr(strict=True)
+    updated_at: constr(strict=True)
+    comment: constr(strict=True)
+    parent: conint(strict=True, ge=0)
+    deleted: bool
+    num_sunshines: conint(strict=True, ge=0)
+    liked: bool
+
+
+class ParentComment(ChildComment):
+    children: List[Optional[ChildComment]]
+
+
+class PostResponse(BaseModel):
+    id: PositiveInt
+    created_at: constr(strict=True)
+    updated_at: constr(strict=True)
+    text: Optional[constr(strict=True)]
+    num_sunshines: conint(strict=True, ge=0)
+    liked: bool
+    character_info: CharacterMini
+    template: Union[NoTemplate, ImageTemplate, DiaryTemplate, AlbumTemplate, ListTemplate]
+
+
+class PostResponseWithComments(PostResponse):
+    comments: List[Optional[ParentComment]]
+
+
 class PostRow(BaseModel):
-    id: int
+    id: PositiveInt
     created_at: datetime
     updated_at: datetime
-    character_id: int
-    template: TemplateType
-    text: str
-    num_sunshines: int
+    character_id: PositiveInt
+    template: constr(strict=True)
+    text: constr(strict=True)
+    num_sunshines: conint(strict=True, ge=0)
 
     class Config:
         orm_mode = True
 
 
-class CharacterMini(BaseModel):
-    name: str
-    profile_img: str
 
-    class Config:
-        orm_mode = True
-
-
-class CharacterCard(BaseModel):
-    name: str
-    profile_img: str
-    intro: str
-
-    class Config:
-        orm_mode = True
 
 
 class CommentMini(BaseModel):
-    id: int
+    id: PositiveInt
     created_at: datetime
     updated_at: datetime
-    comment: str
-    parent: int
+    comment: constr(strict=True)
+    parent: conint(strict=True, ge=0)
     deleted: bool
-    num_sunshines: int
+    num_sunshines: conint(strict=True, ge=0)
 
     class Config:
         orm_mode = True
+
 
 # For Imgs
 
@@ -355,11 +359,11 @@ class SexType(IntEnum, Enum):
 
 
 class UserToken(BaseModel):
-    id: int
+    id: PositiveInt
     email: EmailStr = None
-    name: str = None
-    profile_img: str = None
-    sns_type: str = None
+    name: constr(strict=True) = None
+    profile_img: AnyHttpUrl = None
+    sns_type: constr(strict=True) = None
 
     class Config:
         orm_mode = True
@@ -370,6 +374,163 @@ class UserToken(BaseModel):
                 "name": "오란지",
                 "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
                 "sns_type": "Email"
+            }
+        }
+
+
+# For Search
+
+class CharacterList(BaseModel):
+    characters: List[Optional[CharacterCard]]
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "characters": [
+                    {
+                        "name": "오란지",
+                        "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                        "intro": "상큼합니다."
+                    },
+                    {
+                        "name": "두리안",
+                        "profile_img": "https://img3.daumcdn.net/thumb/R658x0.q70/?fname=https://t1.daumcdn.net/news/202105/21/dailylife/20210521214351768duii.jpg",
+                        "intro": "내 매력의 출구는 없다."
+                    },
+                    {
+                        "name": "폭스",
+                        "profile_img": "https://img.dmitory.com/img/202104/cBS/EJy/cBSEJyPITSwsos0Iy4YuO.jpg",
+                        "intro": "비스트 걸스 폭스에요*^^*"
+                    },
+                    {
+                        "name": "내일의 아스카",
+                        "profile_img": "https://mblogthumb-phinf.pstatic.net/20160120_261/cyc085_1453276292281BRcsj_JPEG/%B8%DE%C0%CE_%C0%CC%B9%CC%C1%F6.jpg?type=w2",
+                        "intro": "시간은 영원할까?"
+                    }
+                ]
+            }
+        }
+
+
+class PostList(BaseModel):
+    posts: List[Optional[PostResponse]]
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "posts": [
+                    {
+                        "id": 1,
+                        "created_at": "2021-09-02T15:25:46",
+                        "updated_at": "2021-09-02T15:25:46",
+                        "character_id": 1,
+                        "template": {
+                            "type": "None"
+                        },
+                        "text": "이것이 포스팅이다.",
+                        "num_sunshines": 0,
+                        "character_info": {
+                            "name": "오란지",
+                            "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
+                        },
+                        "liked": False
+                    },
+                    {
+                        "id": 2,
+                        "created_at": "2021-09-02T15:25:58",
+                        "updated_at": "2021-09-02T15:25:58",
+                        "character_id": 1,
+                        "template": {
+                            "type": "Image",
+                            "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
+                        },
+                        "text": "orange pic",
+                        "num_sunshines": 0,
+                        "character_info": {
+                            "name": "오란지",
+                            "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
+                        },
+                        "liked": False
+                    },
+                    {
+                        "id": 3,
+                        "created_at": "2021-09-02T15:26:07",
+                        "updated_at": "2021-09-02T15:26:07",
+                        "character_id": 1,
+                        "template": {
+                            "type": "Diary",
+                            "title": "오늘의 일기",
+                            "weather": "맑음",
+                            "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                            "date": 20210816,
+                            "content": "오늘은 밥을 먹었다. 참 재미있었다."
+                        },
+                        "text": "오늘은 일기를 썼다.",
+                        "num_sunshines": 0,
+                        "character_info": {
+                            "name": "오란지",
+                            "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
+                        },
+                        "liked": False
+                    },
+                    {
+                        "id": 4,
+                        "created_at": "2021-09-02T15:26:14",
+                        "updated_at": "2021-09-02T15:26:14",
+                        "character_id": 1,
+                        "template": {
+                            "type": "Album",
+                            "title": "this is hiphop",
+                            "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                            "artist": "오란지",
+                            "description": None,
+                            "release_date": 20210821,
+                            "tracks": [
+                                {
+                                    "title": "배신의 십자가",
+                                    "lyric": "으아으아으아으아으아으아"
+                                },
+                                {
+                                    "title": "달콤한 오렌지",
+                                    "lyric": "우와우와우와우와"
+                                }
+                            ]
+                        },
+                        "text": "새 앨범이 나왔어용",
+                        "num_sunshines": 0,
+                        "character_info": {
+                            "name": "오란지",
+                            "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
+                        },
+                        "liked": False
+                    },
+                    {
+                        "id": 5,
+                        "created_at": "2021-09-02T15:26:21",
+                        "updated_at": "2021-09-02T15:26:21",
+                        "character_id": 1,
+                        "template": {
+                            "type": "List",
+                            "title": "My Favorites",
+                            "content": "these are what I like",
+                            "img": None,
+                            "components": [
+                                {
+                                    "title": "Orange",
+                                    "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                                    "content": "오렌지 좋아함 ㅎㅎ"
+                                }
+                            ]
+                        },
+                        "text": "제가 좋아하는 것들입니당",
+                        "num_sunshines": 0,
+                        "character_info": {
+                            "name": "오란지",
+                            "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
+                        },
+                        "liked": False
+                    }
+                ]
             }
         }
 
