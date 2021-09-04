@@ -209,7 +209,7 @@ class Posts(Base, BaseMixin):
 class Characters(Base, BaseMixin):
     __tablename__ = "characters"
     name = Column(String(length=255), unique=True, nullable=False)
-    profile_img = Column(String(length=255), nullable=False)
+    profile_img = Column(String(length=255), nullable=True)
     birth = Column(Integer, nullable=False)
     job = Column(String(length=45), nullable=False)
     nationality = Column(String(length=45), nullable=False)

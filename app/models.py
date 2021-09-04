@@ -35,7 +35,7 @@ class UserLogin(BaseModel):
 
 
 class UserRegister(UserLogin):
-    profile_img: AnyHttpUrl = Field(..., example="https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg")
+    profile_img: Optional[AnyHttpUrl] = Field(..., example="https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg")
     name: constr(strict=True) = Field(..., example="오란지")
 
 
@@ -83,7 +83,7 @@ class ID(BaseModel):
 
 class CharacterMe(BaseModel):
     name: constr(strict=True)
-    profile_img: AnyHttpUrl
+    profile_img: Optional[AnyHttpUrl]
     birth: conint(strict=True, gt=0, lt=100000000)
     job: constr(strict=True)
     nationality: constr(strict=True)
