@@ -9,41 +9,11 @@ from starlette.responses import JSONResponse
 
 from app.database.conn import db
 from app.database.schema import Users, Characters, CharacterHates, CharacterLikes, Follows
-from app import models as m
-from app.errors import exceptions as ex
-import string
-import base64
-import secrets
 
-from app.models import CharacterList, CharacterUpdate, CharacterMe, ID, FollowInfo, Message
+from app.models import UserCharacters, CharacterUpdate, CharacterMe, ID, FollowInfo, Message, CharacterCard, CharacterInfo, UserMini
+from app.utils.examples import update_character_requests
 
 router = APIRouter(prefix='/character')
-
-
-update_examples = {
-    "all": {
-        "value": {
-            "id": 1,
-            "name": "오란지",
-            "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-            "birth": 19990601,
-            "job": "과일",
-            "nationality": "플로리다",
-            "intro": "상큼합니다.",
-            "tmi": "당도가 높은 편입니다.",
-            "likes": ["햇빛", "비옥한 토양", "해변가"],
-            "hates": ["비오는 곳", "낮은 당도", "사과(라이벌)"]
-        }
-    },
-    "part": {
-        "value": {
-            "id": 1,
-            "intro": "상큼합니다.",
-            "tmi": "당도가 높은 편입니다.",
-            "likes": ["햇빛", "비옥한 토양", "해변가"]
-        }
-    }
-}
 
 
 @router.post('', status_code=201, response_model=ID, responses={
@@ -67,49 +37,50 @@ async def create_my_character(request: Request, character: CharacterMe, session:
     return JSONResponse(status_code=201, content=dict(id=character_id))
 
 
-@router.get('/user/{user_name}', status_code=200, response_model=CharacterList, responses={
+@router.get('/user/{user_name}', status_code=200, response_model=UserCharacters, responses={
     404: dict(description="No such user", model=Message)
 })
 async def get_user_characters(user_name: str, session: Session = Depends(db.session)):
-    user = Users.get(session, name=user_name)
-    if not user:
-        return JSONResponse(status_code=400, content=dict(msg="WRONG_USER_NAME"))
-    characters = Characters.filter(session, user_id=user.id).all()
-    character_ids = [character.id for character in characters]
-    likes = CharacterLikes.filter(session, character_id__in=character_ids).all()
-    hates = CharacterHates.filter(session, character_id__in=character_ids).all()
-    likes_dict = defaultdict(list)
-    for like in likes:
-        likes_dict[like.character_id].append(like.like)
-    hates_dict = defaultdict(list)
-    for hate in hates:
-        hates_dict[hate.character_id].append(hate.hate)
-    for i, character in enumerate(characters):
-        setattr(characters[i], 'likes', likes_dict[character.id])
-        setattr(characters[i], 'hates', hates_dict[character.id])
-    characters = [CharacterUpdate.from_orm(character).dict() for character in characters]
-    return JSONResponse(status_code=200, content=dict(characters=characters))
+    user_characters = session.query(Users, Characters).filter(Users.name == user_name).join(Users.character).all()
+    if not user_characters:
+        user = Users.get(session, name=user_name)
+        if not user:
+            return JSONResponse(status_code=400, content=dict(msg="WRONG_USER_NAME"))
+        else:
+            user_info = UserMini.from_orm(user).dict()
+            user_info['num_followers'] = 0
+            user_info['num_characters'] = 0
+            result = dict(user_info=user_info, characters=[])
+    else:
+        user_info = UserMini.from_orm(user_characters[0][0]).dict()
+        user_info['num_followers'] = sum(character[1].num_followers for character in user_characters)
+        user_info['num_characters'] = len(user_characters)
+        result = dict(user_info=user_info, characters=[CharacterCard.from_orm(character[1]).dict() for character in user_characters])
+
+    return JSONResponse(status_code=200, content=result)
 
 
-@router.get('/{character_name}', status_code=200, response_model=CharacterUpdate, responses={
+@router.get('/{character_name}', status_code=200, response_model=CharacterInfo, responses={
     404: dict(description="No such character", model=Message)
 })
 async def get_character(character_name: str, session: Session = Depends(db.session)):
-    character = Characters.get(session, name=character_name)
+    character = session.query(Users, Characters).filter(Characters.name == character_name).join(Users.character).first()
     if not character:
         return JSONResponse(status_code=400, content=dict(msg="WRONG_CHARACTER_NAME"))
+    setattr(character[1], 'user_info', UserMini.from_orm(character[0]).dict())
+    character = character[1]
     likes = CharacterLikes.filter(session, character_id=character.id).all()
     hates = CharacterHates.filter(session, character_id=character.id).all()
     setattr(character, 'likes', [like.like for like in likes])
     setattr(character, 'hates', [hate.hate for hate in hates])
-    character = CharacterUpdate.from_orm(character).dict()
+    character = CharacterInfo.from_orm(character).dict()
     return JSONResponse(status_code=200, content=character)
 
 
 @router.patch('', status_code=204, responses={
     400: dict(description="Given character doesn't belong to you", model=Message)
 })
-async def update_my_character(request: Request, character: CharacterUpdate = Body(..., examples=update_examples), session: Session = Depends(db.session)):
+async def update_my_character(request: Request, character: CharacterUpdate = Body(..., examples=update_character_requests), session: Session = Depends(db.session)):
     user = request.state.user
     old_character = Characters.get(session, id=character.id)
     if old_character.user_id != user.id:

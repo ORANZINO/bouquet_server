@@ -11,9 +11,7 @@ from jwt.exceptions import ExpiredSignatureError, DecodeError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from app.common.consts import EXCEPT_PATH_LIST, EXCEPT_PATH_REGEX
-from app.database.conn import db
-from app.database.schema import Users
+from app.common.consts import EXCEPT_PATH_LIST, EXCEPT_PATH_REGEX, EXCEPT_PATH_REGEX_GET
 from app.errors import exceptions as ex
 
 from app.common import config, consts
@@ -22,7 +20,6 @@ from app.models import UserToken
 
 from app.utils.date_utils import D
 from app.utils.logger import api_logger
-from app.utils.query_utils import to_dict
 
 
 async def access_control(request: Request, call_next):
@@ -38,12 +35,14 @@ async def access_control(request: Request, call_next):
     cookies = request.cookies
 
     url = request.url.path
-    if await url_pattern_check(url, EXCEPT_PATH_REGEX) or url in EXCEPT_PATH_LIST:
+    method = request.method
+
+    if await url_pattern_check(url, EXCEPT_PATH_REGEX) or url in EXCEPT_PATH_LIST \
+            or (method == 'GET' and await url_pattern_check(url, EXCEPT_PATH_REGEX_GET)):
         response = await call_next(request)
         if url != "/":
             await api_logger(request=request, response=response)
         return response
-
     try:
         if "authorization" in headers.keys():
             token_info = await token_decode(access_token=headers.get("Authorization"))

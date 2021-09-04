@@ -157,7 +157,7 @@ class BaseMixin:
             self._session.commit()
 
     def all(self):
-        print(self.served)
+        # print(self.served)
         result = self._q.all()
         self.close()
         return result
