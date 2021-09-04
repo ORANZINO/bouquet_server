@@ -9,12 +9,12 @@ from starlette.requests import Request
 from app.database.conn import db
 from app.database.schema import Posts, Follows
 from app.utils.post_utils import process_post
-
+from app.models import PostList
 
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("/", status_code=200, response_model=PostList)
 async def index(page_num: int = Header(1), character_id: int = Header(None), session: Session = Depends(db.session)):
 
     if character_id is None:
@@ -25,9 +25,9 @@ async def index(page_num: int = Header(1), character_id: int = Header(None), ses
         posts = session.query(Posts).filter(Posts.character_id.in_(followees)).order_by(Posts.created_at.desc())\
             .offset((page_num - 1) * 10).limit(10).all()
 
-    posts = [process_post(character_id, post, session) for post in posts]
+    posts = [process_post(session, character_id, post) for post in posts]
 
-    return JSONResponse(status_code=200, content=dict(msg="GET_FEED_SUCCESS", posts=posts))
+    return JSONResponse(status_code=200, content=dict(posts=posts))
 
 
 @router.get("/test")
