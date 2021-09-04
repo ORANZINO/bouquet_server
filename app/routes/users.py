@@ -7,27 +7,9 @@ from app.database.conn import db
 from app.database.schema import Users
 
 from app.models import UserMe, UserUpdate, Message
+from app.utils.examples import update_user_requests
 
 router = APIRouter(prefix='/user')
-
-update_examples = {
-    "both": {
-        "value": {
-            "name": "오태진",
-            "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
-        }
-    },
-    "name": {
-        "value": {
-            "name": "오태진"
-        }
-    },
-    "img": {
-        "value": {
-            "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
-        }
-    }
-}
 
 
 @router.get('', status_code=200, response_model=UserMe, responses={
@@ -42,11 +24,11 @@ async def get_me(request: Request, session: Session = Depends(db.session)):
 
 
 @router.patch('', status_code=204, description="Successfully updated user")
-async def update_me(request: Request, info: UserUpdate = Body(..., examples=update_examples), session: Session = Depends(db.session)):
+async def update_me(request: Request, info: UserUpdate = Body(..., examples=update_user_requests), session: Session = Depends(db.session)):
     user = request.state.user
     info = dict(info)
     info = {key: info[key] for key in info if info[key] is not None}
-    res = Users.filter(session, id=user.id).update(True, **dict(info))
+    Users.filter(session, id=user.id).update(True, **dict(info))
     return JSONResponse(status_code=204)
 
 
