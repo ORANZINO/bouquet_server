@@ -139,6 +139,39 @@ class CharacterUpdate(BaseModel):
         }
 
 
+class CharacterProfile(CharacterMe):
+    id: PositiveInt
+
+    class Config:
+        orm_mode = True
+        schema_extra = {
+            "example": {
+              "id": 1,
+              "name": "오란지",
+              "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+              "birth": 19990601,
+              "job": "과일",
+              "nationality": "플로리다",
+              "intro": "상큼합니다.",
+              "tmi": "당도가 높은 편입니다.",
+              "likes": [
+                "햇빛",
+                "비옥한 토양",
+                "해변가"
+              ],
+              "hates": [
+                "비오는 곳",
+                "낮은 당도",
+                "사과(라이벌)"
+              ]
+            }
+        }
+
+
+class CharacterProfileList(BaseModel):
+    characters: List[Optional[CharacterProfile]]
+
+
 class CharacterInfo(CharacterMe):
     id: PositiveInt
     num_follows: conint(strict=True, ge=0)
@@ -330,9 +363,6 @@ class PostRow(BaseModel):
 
     class Config:
         orm_mode = True
-
-
-
 
 
 class CommentMini(BaseModel):
