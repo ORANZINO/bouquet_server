@@ -17,8 +17,9 @@ router = APIRouter(prefix='/user')
 })
 async def get_me(request: Request, session: Session = Depends(db.session)):
     user = request.state.user
-    user.sns_type = user.sns_type.lower()
-    user_info = UserMe.from_orm(Users.get(session, id=user.id)).dict()
+    user_info = Users.get(session, id=user.id)
+    setattr(user_info, 'sns_type', user_info.sns_type.lower())
+    user_info = UserMe.from_orm(user_info).dict()
 
     if not user_info:
         return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_USER"))
