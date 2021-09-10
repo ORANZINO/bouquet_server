@@ -17,10 +17,11 @@ router = APIRouter(prefix='/user')
 })
 async def get_me(request: Request, session: Session = Depends(db.session)):
     user = request.state.user
-    user_info = Users.get(session, id=user.id)
+    user_info = UserMe.from_orm(Users.get(session, id=user.id)).dict()
+    user_info['sns_type'] = user_info['sns_type'].lower()
     if not user_info:
         return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_USER"))
-    return JSONResponse(status_code=200, content=UserMe.from_orm(user_info).dict())
+    return JSONResponse(status_code=200, content=user_info)
 
 
 @router.patch('', status_code=204, description="Successfully updated user")
