@@ -66,7 +66,7 @@ async def get_user_characters(user_name: str, session: Session = Depends(db.sess
 async def get_character(character_name: str, session: Session = Depends(db.session)):
     character = session.query(Users, Characters).filter(Characters.name == character_name).join(Users.character).first()
     if not character:
-        return JSONResponse(status_code=400, content=dict(msg="WRONG_CHARACTER_NAME"))
+        return JSONResponse(status_code=404, content=dict(msg="WRONG_CHARACTER_NAME"))
     setattr(character[1], 'user_info', UserMini.from_orm(character[0]).dict())
     character = character[1]
     likes = CharacterLikes.filter(session, character_id=character.id).all()
