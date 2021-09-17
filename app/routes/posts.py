@@ -6,7 +6,7 @@ from app.utils.post_utils import process_post, process_comment
 from app.database.conn import db
 from app.database.schema import Posts, Images, Albums, Diaries, Lists, ListComponents, Tracks, Comments, Characters
 
-from app.models import Post, Comment, PostResponseWithComments, ID
+from app.models import Post, Comment, PostResponseWithComments, ID, Message, PostList
 from app.utils.examples import get_post_responses, create_post_requests
 
 router = APIRouter(prefix='/post')
@@ -56,11 +56,35 @@ async def create_comment(comment: Comment, session: Session = Depends(db.session
     return JSONResponse(status_code=201, content=dict(id=new_comment.id))
 
 
+@router.delete('/comment/{comment_id}', status_code=204, responses={
+    400: dict(description="Not your comment", model=Message)
+})
+async def delete_comment(comment_id: int, session: Session = Depends(db.session)):
+    Comments.filter(session, id=comment_id).delete(auto_commit=True)
+    Comments.filter(session, parent=comment_id).delete(auto_commit=True)
+    return JSONResponse(status_code=204)
+
+
 @router.get('/{post_id}', status_code=200, response_model=PostResponseWithComments, responses=get_post_responses)
 async def get_post(post_id: int, character_id: int = Header(None), session: Session = Depends(db.session)):
     post = process_post(session, character_id, Posts.get(session, id=post_id))
     post['comments'] = process_comment(session, post_id, character_id)
     return JSONResponse(status_code=200, content=post)
+
+
+@router.get('/character/{character_name}/{page_num}', status_code=200, response_model=PostList, responses={
+    404: dict(description="No such character", model=Message)
+})
+async def get_character_posts(character_name: str, page_num: int, session: Session = Depends(db.session)):
+    character = Characters.get(session, name=character_name)
+    if character_name is None or not character:
+        return JSONResponse(status_code=404, content=dict(msg="WRONG_CHARACTER_NAME"))
+    posts = session.query(Posts).filter(Posts.character_id == character.id).order_by(Posts.created_at.desc()) \
+        .offset((page_num - 1) * 10).limit(10).all()
+    posts = [process_post(session, character.id, post) for post in posts]
+    return JSONResponse(status_code=200, content=posts)
+
+
 
 
 

@@ -2,9 +2,9 @@ from typing_extensions import TypedDict
 from datetime import datetime
 from enum import Enum, IntEnum
 from typing import List, Optional, Union
-from pydantic import Field, PositiveInt, AnyHttpUrl, conint, constr, conlist
+from pydantic import Field, PositiveInt, AnyHttpUrl, conint, constr
 from pydantic.main import BaseModel
-from pydantic.networks import EmailStr, IPvAnyAddress
+from pydantic.networks import EmailStr
 
 # For Auth
 
