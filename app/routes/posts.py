@@ -56,10 +56,12 @@ async def create_comment(comment: Comment, session: Session = Depends(db.session
     return JSONResponse(status_code=201, content=dict(id=new_comment.id))
 
 
-@router.delete('/comment/{comment_id}', status_code=204)
+@router.delete('/comment/{comment_id}', status_code=204, responses={
+    400: dict(description="Not your comment", model=Message)
+})
 async def delete_comment(comment_id: int, session: Session = Depends(db.session)):
-    Comments.filter(session, id=comment_id.id).delete(auto_commit=True)
-    Comments.filter(session, parent=comment_id.id).delete(auto_commit=True)
+    Comments.filter(session, id=comment_id).delete(auto_commit=True)
+    Comments.filter(session, parent=comment_id).delete(auto_commit=True)
     return JSONResponse(status_code=204)
 
 
@@ -70,16 +72,16 @@ async def get_post(post_id: int, character_id: int = Header(None), session: Sess
     return JSONResponse(status_code=200, content=post)
 
 
-@router.get('/character', status_code=200, response_model=PostList, responses={
+@router.get('/character/{character_name}/{page_num}', status_code=200, response_model=PostList, responses={
     404: dict(description="No such character", model=Message)
 })
-async def get_character_posts(page_num: int = Header(1), character_id: int = Header(None), session: Session = Depends(db.session)):
-    character = Characters.get(session, id=character_id)
-    if character_id is None or not character:
-        return JSONResponse(status_code=404, content=dict(msg="WRONG_CHARACTER_ID"))
-    posts = session.query(Posts).filter(Posts.character_id == character_id).order_by(Posts.created_at.desc()) \
+async def get_character_posts(character_name: str, page_num: int, session: Session = Depends(db.session)):
+    character = Characters.get(session, name=character_name)
+    if character_name is None or not character:
+        return JSONResponse(status_code=404, content=dict(msg="WRONG_CHARACTER_NAME"))
+    posts = session.query(Posts).filter(Posts.character_id == character.id).order_by(Posts.created_at.desc()) \
         .offset((page_num - 1) * 10).limit(10).all()
-    posts = [process_post(session, character_id, post) for post in posts]
+    posts = [process_post(session, character.id, post) for post in posts]
     return JSONResponse(status_code=200, content=posts)
 
 
