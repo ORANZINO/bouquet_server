@@ -56,6 +56,13 @@ async def create_comment(comment: Comment, session: Session = Depends(db.session
     return JSONResponse(status_code=201, content=dict(id=new_comment.id))
 
 
+@router.delete('/comment/{comment_id}', status_code=204)
+async def delete_comment(comment_id: int, session: Session = Depends(db.session)):
+    Comments.filter(session, id=comment_id.id).delete(auto_commit=True)
+    Comments.filter(session, parent=comment_id.id).delete(auto_commit=True)
+    return JSONResponse(status_code=204)
+
+
 @router.get('/{post_id}', status_code=200, response_model=PostResponseWithComments, responses=get_post_responses)
 async def get_post(post_id: int, character_id: int = Header(None), session: Session = Depends(db.session)):
     post = process_post(session, character_id, Posts.get(session, id=post_id))

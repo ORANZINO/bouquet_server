@@ -1,10 +1,8 @@
 from dataclasses import asdict
-from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI, Depends
 from fastapi.security import APIKeyHeader
-from fastapi.openapi.utils import get_openapi
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
