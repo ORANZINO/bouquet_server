@@ -6,7 +6,7 @@ from app.utils.post_utils import process_post, process_comment
 from app.database.conn import db
 from app.database.schema import Posts, Images, Albums, Diaries, Lists, ListComponents, Tracks, Comments, Characters
 
-from app.models import Post, Comment, PostResponseWithComments, ID
+from app.models import Post, Comment, PostResponseWithComments, ID, Message, PostList
 from app.utils.examples import get_post_responses, create_post_requests
 
 router = APIRouter(prefix='/post')
@@ -68,6 +68,21 @@ async def get_post(post_id: int, character_id: int = Header(None), session: Sess
     post = process_post(session, character_id, Posts.get(session, id=post_id))
     post['comments'] = process_comment(session, post_id, character_id)
     return JSONResponse(status_code=200, content=post)
+
+
+@router.get('/character', status_code=200, response_model=PostList, responses={
+    404: dict(description="No such character", model=Message)
+})
+async def get_character_posts(page_num: int = Header(1), character_id: int = Header(None), session: Session = Depends(db.session)):
+    character = Characters.get(session, id=character_id)
+    if character_id is None or not character:
+        return JSONResponse(status_code=404, content=dict(msg="WRONG_CHARACTER_ID"))
+    posts = session.query(Posts).filter(Posts.character_id == character_id).order_by(Posts.created_at.desc()) \
+        .offset((page_num - 1) * 10).limit(10).all()
+    posts = [process_post(session, character_id, post) for post in posts]
+    return JSONResponse(status_code=200, content=posts)
+
+
 
 
 
