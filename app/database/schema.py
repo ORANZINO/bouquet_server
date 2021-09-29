@@ -183,6 +183,7 @@ class Users(Base, BaseMixin):
     profile_img = Column(String(length=255), nullable=True)
     sns_type = Column(Enum("Email", "Google", "Apple"), nullable=False)
     marketing_agree = Column(Boolean, nullable=True, default=True)
+    default_character_id = Column(Integer, nullable=True, default=None)
     character = relationship("Characters", backref="characters", cascade="all, delete-orphan")
 
 
