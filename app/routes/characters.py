@@ -9,14 +9,32 @@ from starlette.responses import JSONResponse
 
 from app.database.conn import db
 from app.database.schema import Users, Characters, CharacterHates, CharacterLikes, Follows
-
-from app.models import UserCharacters, CharacterUpdate, CharacterMe, ID, FollowInfo, Message, CharacterCard, CharacterInfo, UserMini
+from app.routes.auth import create_access_token
+from app.models import CharacterMe, IDWithToken, UserToken, Message, CharacterCard, CharacterInfo, UserMini, UserCharacters, CharacterUpdate, ID, Token
 from app.utils.examples import update_character_requests
 
 router = APIRouter(prefix='/character')
 
 
-@router.post('', status_code=201, response_model=ID, responses={
+@router.post('/change', status_code=200, response_model=Token, responses={
+    400: dict(description="Given character doesn't belong to you", model=Message),
+    404: dict(description="Given character doesn't exist", model=Message)
+})
+async def change_my_character(request: Request, character_id: int, session: Session = Depends(db.session)):
+    user = request.state.user
+    character = Characters.get(session, id=character_id)
+    if not character:
+        return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_CHARACTER"))
+    elif character.user_id != user.id:
+        return JSONResponse(status_code=400, content=dict(msg="WRONG_CHARACTER_ID"))
+    else:
+        user.default_character_id = character_id
+        token = f"Bearer {create_access_token(data=user)}"
+
+    return JSONResponse(status_code=201, content=dict(Authorization=token))
+
+
+@router.post('', status_code=201, response_model=IDWithToken, responses={
     202: dict(description="Given character name already exists", model=Message)
 })
 async def create_my_character(request: Request, character: CharacterMe, session: Session = Depends(db.session)):
