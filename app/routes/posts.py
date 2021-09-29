@@ -91,9 +91,23 @@ async def get_character_posts(character_name: str, page_num: int, session: Sessi
     posts = session.query(Posts).filter(Posts.character_id == character.id).order_by(Posts.created_at.desc()) \
         .offset((page_num - 1) * 10).limit(10).all()
     posts = [process_post(session, character.id, post) for post in posts]
-    return JSONResponse(status_code=200, content=posts)
+    total_post_num = Posts.filter(session, character_id=character.id).count()
+    return JSONResponse(status_code=200, content=dict(posts=posts, total_post_num=total_post_num))
 
 
+@router.post('/like/{post_id}', status_code=204, responses={
+    404: dict(description="No such post", model=Message)
+})
+async def like(request: Request, post_id: int, session: Session = Depends(db.session)):
+    user = request.state.user
+    post = Posts.get(session, id=post_id)
+    if not post:
+        return JSONResponse(status_code=404, content=dict(msg="WRONG_POST_ID"))
+    session.query(Posts).filter_by(id=post_id).update({Posts.num_sunshines: Posts.num_sunshines + 1})
+    session.commit()
+    session.flush()
+    PostSunshines.create(session, True, character_id=user.default_character_id, post_id=post.id)
+    return JSONResponse(status_code=204)
 
 
 
