@@ -226,9 +226,12 @@ class Characters(Base, BaseMixin):
     follower = relationship("Follows", backref="follow", cascade="all, delete-orphan",
                             foreign_keys=[Follows.follower_id])
     post = relationship("Posts", backref="post", cascade="all, delete-orphan")
+    qna = relationship("QnAs", backref="qna", cascade="all, delete-orphan")
     comment = relationship("Comments", backref="character_comment", cascade="all, delete-orphan")
     post_sunshine = relationship("PostSunshines", backref="character_post_sunshines", cascade="all, delete-orphan")
     comment_sunshine = relationship("CommentSunshines", backref="character_comment_sunshines",
+                                    cascade="all, delete-orphan")
+    qna_sunshine = relationship("QnASunshines", backref="character_qna_sunshines",
                                     cascade="all, delete-orphan")
 
 
@@ -316,3 +319,18 @@ class Tracks(Base, BaseMixin):
     album_id = Column(Integer, ForeignKey("albums.id", ondelete="cascade"), nullable=False)
     title = Column(String(length=255), nullable=False)
     lyric = Column(Text(), nullable=True)
+
+
+class QnASunshines(Base, BaseMixin):
+    __tablename__ = "qna_sunshines"
+    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
+    qna_id = Column(Integer, ForeignKey("qnas.id", ondelete="cascade"), nullable=False)
+
+
+class QnAs(Base, BaseMixin):
+    __tablename__ = "qnas"
+    respondent_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
+    question = Column(String(length=255), nullable=False)
+    answer = Column(String(length=255), nullable=True)
+    num_sunshines = Column(Integer, nullable=False, default=0)
+    sunshine = relationship("QnASunshines", backref="qna_sunshines", cascade="all, delete-orphan")

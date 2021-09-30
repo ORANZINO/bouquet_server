@@ -373,6 +373,30 @@ class CommentMini(BaseModel):
         orm_mode = True
 
 
+# For QnAs
+
+class QnA(BaseModel):
+    question: constr(strict=True) = Field(..., example="제일 좋아하는 과일은?")
+    answer: constr(strict=True) = Field(..., example="오렌지.")
+
+
+class QnARow(BaseModel):
+    id: PositiveInt
+    question: constr(strict=True)
+    answer: constr(strict=True)
+    num_sunshines: conint(strict=True, ge=0)
+
+
+class QnARowWithLike(QnARow):
+    liked: bool
+
+
+class QnAList(BaseModel):
+    character_name: constr(strict=True)
+    profile_img: AnyHttpUrl
+    qnas: List[Optional[QnARowWithLike]]
+
+
 # For Imgs
 
 
