@@ -50,6 +50,21 @@ async def create_post(post: Post = Body(..., examples=create_post_requests), ses
     return JSONResponse(status_code=201, content=dict(id=new_post.id))
 
 
+@router.delete('', status_code=204, responses={
+    400: dict(description="Not your post", model=Message),
+    404: dict(description="No such post", model=Message)
+})
+async def delete_post(request: Request, post_id: int, session: Session = Depends(db.session)):
+    user = request.state.user
+    post = Posts.get(session, post_id=post_id)
+    if not post:
+        return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_POST"))
+    elif user.default_character_id != post.character_id:
+        return JSONResponse(status_code=400, content=dict(msg="WRONG_CHARACTER_ID"))
+    Posts.filter(session, id=post_id).delete(auto_commit=True)
+    return JSONResponse(status_code=204)
+
+
 @router.post('/comment', status_code=201, response_model=ID)
 async def create_comment(request: Request, comment: Comment, session: Session = Depends(db.session)):
     user = request.state.user
