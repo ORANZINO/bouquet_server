@@ -326,5 +326,18 @@ get_post_responses = {
                 }
             }
         }
+    },
+    404: {
+        "content": {
+            "application/json": {
+                "examples": {
+                    "NO MATCH POST": {
+                        "value": {
+                            "msg": "NO_MATCH_POST"
+                        }
+                    }
+                }
+            }
+        }
     }
 }

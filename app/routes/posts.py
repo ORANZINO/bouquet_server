@@ -5,9 +5,10 @@ from starlette.responses import JSONResponse
 from app.utils.post_utils import process_post, process_comment
 from app.database.conn import db
 from app.database.schema import Posts, Images, Albums, Diaries, Lists, ListComponents, Tracks, Comments, Characters, PostSunshines
-
+from typing import Optional
 from app.models import Post, Comment, PostResponseWithComments, Message, ID, PostListWithNum
 from app.utils.examples import get_post_responses, create_post_requests
+from app.middlewares.token_validator import token_decode
 
 router = APIRouter(prefix='/post')
 
@@ -89,10 +90,17 @@ async def delete_comment(request: Request, comment_id: int, session: Session = D
 
 
 @router.get('/{post_id}', status_code=200, response_model=PostResponseWithComments, responses=get_post_responses)
-async def get_post(request: Request, post_id: int, session: Session = Depends(db.session)):
-    user = request.state.user
-    post = process_post(session, user.default_character_id, Posts.get(session, id=post_id))
-    post['comments'] = process_comment(session, post_id, user.default_character_id)
+async def get_post(request: Request, post_id: int, token: Optional[str] = Header(None), session: Session = Depends(db.session)):
+    post = Posts.get(session, id=post_id)
+    if post is None:
+        return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_POST"))
+    elif token is None:
+        character_id = None
+    else:
+        user = await token_decode(access_token=token)
+        character_id = user.default_character_id
+    post = process_post(session, character_id, post)
+    post['comments'] = process_comment(session, post_id, character_id)
     return JSONResponse(status_code=200, content=post)
 
 
