@@ -98,7 +98,7 @@ async def get_post(request: Request, post_id: int, token: Optional[str] = Header
         character_id = None
     else:
         user = await token_decode(access_token=token)
-        character_id = user.default_character_id
+        character_id = user['default_character_id']
     post = process_post(session, character_id, post)
     post['comments'] = process_comment(session, post_id, character_id)
     return JSONResponse(status_code=200, content=post)

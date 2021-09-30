@@ -22,8 +22,8 @@ async def index(page_num: int, token: Optional[str] = Header(None), session: Ses
         character_id = None
     else:
         user = await token_decode(access_token=token)
-        character_id = user.default_character_id
-        followees = Follows.filter(session, follower_id=user.default_character_id).all()
+        character_id = user['default_character_id']
+        followees = Follows.filter(session, follower_id=character_id).all()
         followees = [f.character_id for f in followees]
         posts = session.query(Posts).filter(Posts.character_id.in_(followees)).order_by(Posts.created_at.desc())\
             .offset((page_num - 1) * 10).limit(10).all()
