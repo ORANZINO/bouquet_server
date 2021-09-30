@@ -64,8 +64,3 @@ async def get_my_characters(request: Request, session: Session = Depends(db.sess
 
     return JSONResponse(status_code=200, content=result)
 
-
-
-
-
-

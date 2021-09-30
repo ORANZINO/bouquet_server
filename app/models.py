@@ -2,7 +2,7 @@ from typing_extensions import TypedDict
 from datetime import datetime
 from enum import Enum, IntEnum
 from typing import List, Optional, Union
-from pydantic import Field, PositiveInt, AnyHttpUrl, conint, constr
+from pydantic import Field, PositiveInt, AnyHttpUrl, conint, constr, StrictBool
 from pydantic.main import BaseModel
 from pydantic.networks import EmailStr
 
@@ -76,9 +76,13 @@ class UserMini(BaseModel):
 
 #  For Character
 
-
 class ID(BaseModel):
     id: PositiveInt = Field(..., example=1)
+
+
+class IDWithToken(BaseModel):
+    id: PositiveInt = Field(..., example=1)
+    Authorization: constr(strict=True) = None
 
 
 class CharacterMe(BaseModel):
@@ -232,14 +236,6 @@ class UserCharacters(BaseModel):
         orm_mode = True
 
 
-class FollowInfo(BaseModel):
-    character_id: PositiveInt = Field(..., example=1)
-    follower_id: PositiveInt = Field(..., example=3)
-
-    class Config:
-        orm_mode = True
-
-
 # For Post
 class NoTemplate(BaseModel):
     type: str = Field("None", const=True)
@@ -298,7 +294,6 @@ class Post(BaseModel):
 
 class Comment(BaseModel):
     post_id: PositiveInt
-    character_id: PositiveInt
     comment: constr(strict=True)
     parent: conint(strict=True, ge=0)
 
@@ -378,6 +373,30 @@ class CommentMini(BaseModel):
         orm_mode = True
 
 
+# For QnAs
+
+class QnA(BaseModel):
+    question: constr(strict=True) = Field(..., example="제일 좋아하는 과일은?")
+    answer: constr(strict=True) = Field(..., example="오렌지.")
+
+
+class QnARow(BaseModel):
+    id: PositiveInt
+    question: constr(strict=True)
+    answer: constr(strict=True)
+    num_sunshines: conint(strict=True, ge=0)
+
+
+class QnARowWithLike(QnARow):
+    liked: bool
+
+
+class QnAList(BaseModel):
+    character_name: constr(strict=True)
+    profile_img: AnyHttpUrl
+    qnas: List[Optional[QnARowWithLike]]
+
+
 # For Imgs
 
 
@@ -394,6 +413,7 @@ class UserToken(BaseModel):
     name: constr(strict=True) = None
     profile_img: AnyHttpUrl = None
     sns_type: constr(strict=True) = None
+    default_character_id: Optional[PositiveInt] = None
 
     class Config:
         orm_mode = True
@@ -561,6 +581,130 @@ class PostList(BaseModel):
                         "liked": False
                     }
                 ]
+            }
+        }
+
+
+class PostListWithNum(PostList):
+    total_post_num: conint(strict=True, ge=0) = Field(..., example=15)
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "posts": [
+                    {
+                        "id": 1,
+                        "created_at": "2021-09-02T15:25:46",
+                        "updated_at": "2021-09-02T15:25:46",
+                        "character_id": 1,
+                        "template": {
+                            "type": "None"
+                        },
+                        "text": "이것이 포스팅이다.",
+                        "num_sunshines": 0,
+                        "character_info": {
+                            "name": "오란지",
+                            "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
+                        },
+                        "liked": False
+                    },
+                    {
+                        "id": 2,
+                        "created_at": "2021-09-02T15:25:58",
+                        "updated_at": "2021-09-02T15:25:58",
+                        "character_id": 1,
+                        "template": {
+                            "type": "Image",
+                            "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
+                        },
+                        "text": "orange pic",
+                        "num_sunshines": 0,
+                        "character_info": {
+                            "name": "오란지",
+                            "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
+                        },
+                        "liked": False
+                    },
+                    {
+                        "id": 3,
+                        "created_at": "2021-09-02T15:26:07",
+                        "updated_at": "2021-09-02T15:26:07",
+                        "character_id": 1,
+                        "template": {
+                            "type": "Diary",
+                            "title": "오늘의 일기",
+                            "weather": "맑음",
+                            "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                            "date": 20210816,
+                            "content": "오늘은 밥을 먹었다. 참 재미있었다."
+                        },
+                        "text": "오늘은 일기를 썼다.",
+                        "num_sunshines": 0,
+                        "character_info": {
+                            "name": "오란지",
+                            "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
+                        },
+                        "liked": False
+                    },
+                    {
+                        "id": 4,
+                        "created_at": "2021-09-02T15:26:14",
+                        "updated_at": "2021-09-02T15:26:14",
+                        "character_id": 1,
+                        "template": {
+                            "type": "Album",
+                            "title": "this is hiphop",
+                            "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                            "artist": "오란지",
+                            "description": None,
+                            "release_date": 20210821,
+                            "tracks": [
+                                {
+                                    "title": "배신의 십자가",
+                                    "lyric": "으아으아으아으아으아으아"
+                                },
+                                {
+                                    "title": "달콤한 오렌지",
+                                    "lyric": "우와우와우와우와"
+                                }
+                            ]
+                        },
+                        "text": "새 앨범이 나왔어용",
+                        "num_sunshines": 0,
+                        "character_info": {
+                            "name": "오란지",
+                            "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
+                        },
+                        "liked": False
+                    },
+                    {
+                        "id": 5,
+                        "created_at": "2021-09-02T15:26:21",
+                        "updated_at": "2021-09-02T15:26:21",
+                        "character_id": 1,
+                        "template": {
+                            "type": "List",
+                            "title": "My Favorites",
+                            "content": "these are what I like",
+                            "img": None,
+                            "components": [
+                                {
+                                    "title": "Orange",
+                                    "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                                    "content": "오렌지 좋아함 ㅎㅎ"
+                                }
+                            ]
+                        },
+                        "text": "제가 좋아하는 것들입니당",
+                        "num_sunshines": 0,
+                        "character_info": {
+                            "name": "오란지",
+                            "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg"
+                        },
+                        "liked": False
+                    }
+                ],
+                "total_post_num": 15
             }
         }
 

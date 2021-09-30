@@ -21,7 +21,6 @@ async def get_top_characters(session: Session = Depends(db.session)):
 @router.get('/top-posts', status_code=200, response_model=PostList)
 async def get_top_posts(page_num: int = Header(1), character_id: int = Header(None), session: Session = Depends(db.session)):
     top_posts = session.query(Posts).order_by(Posts.num_sunshines.desc()).offset((page_num - 1) * 5).limit(5).all()
-    print(f'top_post: {top_posts}')
     top_posts = [process_post(session, character_id, post) for post in top_posts]
     return JSONResponse(status_code=200, content=dict(posts=top_posts))
 
