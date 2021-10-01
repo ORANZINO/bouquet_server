@@ -29,7 +29,7 @@ async def change_my_character(request: Request, character_id: int, session: Sess
         return JSONResponse(status_code=400, content=dict(msg="WRONG_CHARACTER_ID"))
     else:
         user.default_character_id = character_id
-        token = f"Bearer {create_access_token(data=user)}"
+        token = f"Bearer {create_access_token(data=dict(user))}"
 
     return JSONResponse(status_code=201, content=dict(Authorization=token))
 
