@@ -118,7 +118,7 @@ async def get_character_posts(character_name: str, page_num: int, session: Sessi
     return JSONResponse(status_code=200, content=dict(posts=posts, total_post_num=total_post_num))
 
 
-@router.post('/like/{post_id}', status_code=204, responses={
+@router.post('/like/{post_id}', status_code=200, responses={
     404: dict(description="No such post", model=Message)
 })
 async def like(request: Request, post_id: int, session: Session = Depends(db.session)):
@@ -126,11 +126,22 @@ async def like(request: Request, post_id: int, session: Session = Depends(db.ses
     post = Posts.get(session, id=post_id)
     if not post:
         return JSONResponse(status_code=404, content=dict(msg="WRONG_POST_ID"))
-    session.query(Posts).filter_by(id=post_id).update({Posts.num_sunshines: Posts.num_sunshines + 1})
-    session.commit()
-    session.flush()
-    PostSunshines.create(session, True, character_id=user.default_character_id, post_id=post.id)
-    return JSONResponse(status_code=204)
+    like_exists = PostSunshines.get(session, character_id=user.default_character_id, post_id=post_id)
+    if like_exists:
+        session.query(Posts).filter_by(id=post_id).update({Posts.num_sunshines: Posts.num_sunshines - 1})
+        session.commit()
+        session.flush()
+        PostSunshines.filter(session, True, character_id=user.default_character_id, post_id=post.id).delete(True)
+        return JSONResponse(status_code=200, content=dict(msg="UNLIKE_SUCCESS"))
+    else:
+        session.query(Posts).filter_by(id=post_id).update({Posts.num_sunshines: Posts.num_sunshines - 1})
+        session.commit()
+        session.flush()
+        PostSunshines.create(session, True, character_id=user.default_character_id, post_id=post.id)
+        return JSONResponse(status_code=200, content=dict(msg="LIKE_SUCCESS"))
+
+
+
 
 
 
