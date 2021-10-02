@@ -23,8 +23,7 @@ async def create_qna(request: Request, qna: QnA, session: Session = Depends(db.s
 @router.get('/{character_name}/{page_num}', status_code=200, response_model=QnAList, responses={
     404: dict(description="No such character", model=Message)
 })
-async def get_character_qna(request: Request, character_name: str, page_num: int, session: Session = Depends(db.session)):
-    user = request.state.user
+async def get_character_qna(character_name: str, page_num: int, session: Session = Depends(db.session)):
     character = Characters.get(session, name=character_name)
     if not character:
         return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_CHARACTER"))
