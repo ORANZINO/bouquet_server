@@ -2,7 +2,7 @@ from datetime import datetime
 
 from starlette.responses import Response, JSONResponse
 from inspect import currentframe as frame
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, Path
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 from typing import Optional
@@ -16,7 +16,7 @@ router = APIRouter()
 
 
 @router.get("/", status_code=200, response_model=PostList)
-async def index(page_num: int, token: Optional[str] = Header(None), session: Session = Depends(db.session)):
+async def index(page_num: Optional[int] = Header(1), token: Optional[str] = Header(None), session: Session = Depends(db.session)):
     if token is None:
         posts = session.query(Posts).order_by(Posts.num_sunshines.desc()).offset((page_num - 1) * 10).limit(10).all()
         character_id = None
