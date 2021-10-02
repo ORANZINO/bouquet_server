@@ -57,7 +57,7 @@ async def create_post(post: Post = Body(..., examples=create_post_requests), ses
 })
 async def delete_post(request: Request, post_id: int, session: Session = Depends(db.session)):
     user = request.state.user
-    post = Posts.get(session, post_id=post_id)
+    post = Posts.get(session, id=post_id)
     if not post:
         return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_POST"))
     elif user.default_character_id != post.character_id:
@@ -90,7 +90,7 @@ async def delete_comment(request: Request, comment_id: int, session: Session = D
 
 
 @router.get('/{post_id}', status_code=200, response_model=PostResponseWithComments, responses=get_post_responses)
-async def get_post(request: Request, post_id: int, token: Optional[str] = Header(None), session: Session = Depends(db.session)):
+async def get_post(post_id: int, token: Optional[str] = Header(None), session: Session = Depends(db.session)):
     post = Posts.get(session, id=post_id)
     if post is None:
         return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_POST"))
