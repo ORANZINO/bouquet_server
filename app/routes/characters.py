@@ -80,10 +80,10 @@ async def get_user_characters(user_name: str, session: Session = Depends(db.sess
     return JSONResponse(status_code=200, content=result)
 
 
-@router.get('/me', status_code=200, response_model=ID, responses={
+@router.post('/me', status_code=200, response_model=ID, responses={
     404: dict(description="No such character", model=Message)
 })
-async def get_me(request: Request, session: Session = Depends(db.session)):
+async def who_am_i(request: Request, session: Session = Depends(db.session)):
     user = request.state.user
     character = Characters.get(session, id=user.default_character_id)
     if not character:
