@@ -16,8 +16,9 @@ router = APIRouter(prefix='/qna')
 @router.post('', status_code=201, response_model=ID)
 async def create_qna(request: Request, qna: QnA, session: Session = Depends(db.session)):
     user = request.state.user
-    qna.respondent_id = user.default_character_id
-    new_qna = QnAs.create(session, True, **dict(qna))
+    qna = dict(qna)
+    qna['respondent_id'] = user.default_character_id
+    new_qna = QnAs.create(session, True, **qna)
     return JSONResponse(status_code=201, content=dict(id=new_qna.id))
 
 
@@ -36,6 +37,19 @@ async def get_character_qna(character_name: str, page_num: int, session: Session
 
     return JSONResponse(status_code=201, content=dict(character_name=character.name, profile_img=character.profile_img,
                                                       qnas=qnas))
+
+
+@router.delete('', status_code=204, responses={
+    400: dict(description="Not your Q&A", model=Message)
+})
+async def delete_qna(request: Request, qna_id: int, session: Session = Depends(db.session)):
+    user = request.state.user
+    qna = QnAs.get(session, id=qna_id)
+    if qna.respondent_id == user.default_character_id:
+        QnAs.filter(session, id=qna_id).delete(True)
+    else:
+        return JSONResponse(status_code=400, content=dict(msg="WRONG_CHARACTER"))
+    return JSONResponse(status_code=204)
 
 
 @router.post('/question', status_code=201, response_model=ID)

@@ -131,10 +131,13 @@ async def get_character_posts(character_name: str, page_num: int, session: Sessi
 
 
 @router.post('/like/{post_id}', status_code=200, response_model=Message, responses={
+    400: dict(description="You should have character to like", model=Message),
     404: dict(description="No such post", model=Message)
 })
 async def like_post(request: Request, post_id: int, background_tasks: BackgroundTasks, session: Session = Depends(db.session)):
     user = request.state.user
+    if user.default_character_id is None:
+        return JSONResponse(status_code=400, content=dict(msg="NO_GIVEN_CHARACTER"))
     post = Posts.get(session, id=post_id)
     if not post:
         return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_POST"))
@@ -155,10 +158,13 @@ async def like_post(request: Request, post_id: int, background_tasks: Background
 
 
 @router.post('/comment/like/{comment_id}', status_code=200, response_model=Message, responses={
+    400: dict(description="You should have character to like", model=Message),
     404: dict(description="No such comment", model=Message)
 })
 async def like_comment(request: Request, comment_id: int, background_tasks: BackgroundTasks, session: Session = Depends(db.session)):
     user = request.state.user
+    if user.default_character_id is None:
+        return JSONResponse(status_code=400, content=dict(msg="NO_GIVEN_CHARACTER"))
     comment = Comments.get(session, id=comment_id)
     if not comment:
         return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_COMMENT"))

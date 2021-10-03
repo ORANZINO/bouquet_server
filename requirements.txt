@@ -8,6 +8,7 @@ cffi
 chardet
 click
 email-validator
+exponent_server_sdk
 fastapi
 gunicorn
 h11
