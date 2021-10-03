@@ -4,15 +4,24 @@ from app.database.schema import PushTokens, Notifications, Characters
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, Request, Header
 from starlette.responses import JSONResponse
-from app.models import ExponentPushToken, NotificationList, NotificationRow, Message
+from app.models import ExponentPushToken, NotificationList, NotificationRow, Message, Count
 from typing import Optional
 from datetime import timedelta
 
 router = APIRouter(prefix='/notification')
 
 
-# Basic arguments. You should extend this function with the push features you
-# want to use, or simply pass in a `PushMessage` object.
+@router.get('/count', status_code=200, response_model=Count, responses={
+    400: dict(description="You should have character", model=Message),
+})
+async def count_my_notifications(request: Request, session: Session = Depends(db.session)):
+    user = request.state.user
+
+    if user.default_character_id is None:
+        return JSONResponse(status_code=400, content=dict(msg="NO_GIVEN_CHARACTER"))
+    character_id = user.default_character_id
+    return JSONResponse(status_code=200, content=dict(count=Notifications.filter(session, receiver_id=character_id).count()))
+
 
 @router.get('', status_code=200, response_model=NotificationList, responses={
     400: dict(description="You should have character", model=Message),
