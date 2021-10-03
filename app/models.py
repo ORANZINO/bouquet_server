@@ -410,7 +410,7 @@ class NotificationRow(BaseModel):
     sender_name: constr(strict=True)
     sender_profile_img: AnyHttpUrl
     category: constr(strict=True)
-    post_id: PositiveInt
+    post_id: Optional[PositiveInt]
 
     class Config:
         orm_mode = True
