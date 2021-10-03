@@ -404,6 +404,46 @@ class ExponentPushToken(BaseModel):
     token: constr(strict=True) = Field(..., example='ExponentPushToken[ao8g3tHL8052V33aI9hREo]')
 
 
+class NotificationRow(BaseModel):
+    id: PositiveInt
+    created_at: str
+    sender_name: constr(strict=True)
+    sender_profile_img: AnyHttpUrl
+    category: constr(strict=True)
+    post_id: PositiveInt
+
+    class Config:
+        orm_mode = True
+
+
+class NotificationList(BaseModel):
+    notifications: List[Optional[NotificationRow]]
+
+    class Config:
+        schema_extra = {
+            "example": {
+              "notifications": [
+                {
+                  "id": 64,
+                  "created_at": "2021-10-03T21:22:34",
+                  "sender_name": "C JAMM",
+                  "sender_profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                  "category": "LikeComment",
+                  "post_id": 1
+                },
+                {
+                  "id": 63,
+                  "created_at": "2021-10-03T21:22:33",
+                  "sender_name": "C JAMM",
+                  "sender_profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
+                  "category": "LikeComment",
+                  "post_id": 1
+                }
+              ]
+            }
+        }
+
+
 # For Imgs
 
 
