@@ -209,6 +209,14 @@ class Posts(Base, BaseMixin):
     comment_sunshine = relationship("CommentSunshines", backref="post_comment_sunshines", cascade="all, delete-orphan")
 
 
+class Notifications(Base, BaseMixin):
+    __tablename__ = "notifications"
+    sender_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
+    receiver_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
+    category = Column(Enum("LikePost", "LikeComment", "Follow", "Comment"), nullable=False)
+    post_id = Column(Integer, nullable=True, default=None)
+
+
 class Characters(Base, BaseMixin):
     __tablename__ = "characters"
     name = Column(String(length=255), unique=True, nullable=False)
@@ -235,7 +243,8 @@ class Characters(Base, BaseMixin):
                                     cascade="all, delete-orphan")
     qna_sunshine = relationship("QnASunshines", backref="character_qna_sunshines",
                                     cascade="all, delete-orphan")
-    notification = relationship("Notifications", backref="notifications", cascade="all, delete-orphan")
+    sender = relationship("Notifications", backref="senders", cascade="all, delete-orphan", foreign_keys=[Notifications.sender_id])
+    receiver = relationship("Notifications", backref="receivers", cascade="all, delete-orphan", foreign_keys=[Notifications.receiver_id])
 
 
 class CharacterLikes(Base, BaseMixin):
@@ -345,12 +354,7 @@ class Questions(Base, BaseMixin):
     question = Column(String(length=255), nullable=False)
 
 
-class Notifications(Base, BaseMixin):
-    __tablename__ = "notifications"
-    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
-
-
 class PushTokens(Base, BaseMixin):
-    __tablename__ = "pushtokens"
+    __tablename__ = "push_tokens"
     user_id = Column(Integer, ForeignKey("users.id", ondelete="cascade"), nullable=False)
     token = Column(String(length=255), nullable=False)
