@@ -202,6 +202,7 @@ class Posts(Base, BaseMixin):
     img = relationship("Images", backref="images", cascade="all, delete-orphan")
     list = relationship("Lists", backref="lists", cascade="all, delete-orphan")
     album = relationship("Albums", backref="albums", cascade="all, delete-orphan")
+    diary = relationship("Diaries", backref="diaries", cascade="all, delete-orphan")
     comment = relationship("Comments", backref="post_comment", cascade="all, delete-orphan")
     sunshine = relationship("PostSunshines", backref="post_sunshines", cascade="all, delete-orphan")
     comment_sunshine = relationship("CommentSunshines", backref="post_comment_sunshines", cascade="all, delete-orphan")
@@ -283,6 +284,7 @@ class Lists(Base, BaseMixin):
     content = Column(String(length=255), nullable=True)
     img = Column(String(length=255), nullable=True)
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="cascade"), nullable=False)
+    component = relationship("ListComponents", backref="components", cascade="all, delete-orphan")
 
 
 class ListComponents(Base, BaseMixin):
