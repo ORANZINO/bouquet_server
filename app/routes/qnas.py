@@ -1,12 +1,13 @@
 
 from fastapi import APIRouter, Depends, Header, Body, Request
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.expression import func
 from starlette.responses import JSONResponse
 from app.utils.post_utils import process_post, process_comment
 from app.database.conn import db
-from app.database.schema import Characters, QnASunshines, QnAs
+from app.database.schema import Characters, QnASunshines, QnAs, Questions
 
-from app.models import ID, QnA, Message, QnARow, QnAList
+from app.models import ID, QnA, Message, QnARow, QnAList, Question
 from app.utils.examples import get_post_responses, create_post_requests
 
 router = APIRouter(prefix='/qna')
@@ -35,3 +36,16 @@ async def get_character_qna(character_name: str, page_num: int, session: Session
 
     return JSONResponse(status_code=201, content=dict(character_name=character.name, profile_img=character.profile_img,
                                                       qnas=qnas))
+
+
+@router.post('/question', status_code=201, response_model=ID)
+async def create_question(question: Question, session: Session = Depends(db.session)):
+    new_qna = Questions.create(session, True, question=question.question)
+    return JSONResponse(status_code=201, content=dict(id=new_qna.id))
+
+
+@router.get('/question', status_code=200, response_model=Question)
+async def get_question(session: Session = Depends(db.session)):
+    question = session.query(Questions).order_by(func.rand()).first()
+    return JSONResponse(status_code=200, content=dict(question=question.question))
+

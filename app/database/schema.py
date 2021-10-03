@@ -185,6 +185,7 @@ class Users(Base, BaseMixin):
     marketing_agree = Column(Boolean, nullable=True, default=True)
     default_character_id = Column(Integer, nullable=True, default=None)
     character = relationship("Characters", backref="characters", cascade="all, delete-orphan")
+    pushtoken = relationship("PushTokens", backref="pushtokens", cascade="all, delete-orphan")
 
 
 class Follows(Base, BaseMixin):
@@ -234,6 +235,7 @@ class Characters(Base, BaseMixin):
                                     cascade="all, delete-orphan")
     qna_sunshine = relationship("QnASunshines", backref="character_qna_sunshines",
                                     cascade="all, delete-orphan")
+    notification = relationship("Notifications", backref="notifications", cascade="all, delete-orphan")
 
 
 class CharacterLikes(Base, BaseMixin):
@@ -336,3 +338,19 @@ class QnAs(Base, BaseMixin):
     answer = Column(String(length=255), nullable=True)
     num_sunshines = Column(Integer, nullable=False, default=0)
     sunshine = relationship("QnASunshines", backref="qna_sunshines", cascade="all, delete-orphan")
+
+
+class Questions(Base, BaseMixin):
+    __tablename__ = "questions"
+    question = Column(String(length=255), nullable=False)
+
+
+class Notifications(Base, BaseMixin):
+    __tablename__ = "notifications"
+    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
+
+
+class PushTokens(Base, BaseMixin):
+    __tablename__ = "pushtokens"
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="cascade"), nullable=False)
+    token = Column(String(length=255), nullable=False)
