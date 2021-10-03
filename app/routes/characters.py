@@ -171,9 +171,9 @@ async def follow(request: Request, character_id: ID, background_tasks: Backgroun
         return JSONResponse(status_code=400, content=dict(msg="WRONG_USER"))
     follow_exists = Follows.get(session, character_id=followee.id, follower_id=follower.id)
     if follow_exists:
-        session.query(Characters).filter_by(id=followee.character_id)\
+        session.query(Characters).filter_by(id=followee.id)\
             .update({Characters.num_followers: Characters.num_followers - 1})
-        session.query(Characters).filter_by(id=follower.follower_id) \
+        session.query(Characters).filter_by(id=follower.id) \
             .update({Characters.num_follows: Characters.num_follows - 1})
         session.commit()
         session.flush()
