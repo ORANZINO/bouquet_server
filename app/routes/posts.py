@@ -15,10 +15,19 @@ router = APIRouter(prefix='/post')
 post_keys = ["character_id", "template", "text"]
 
 
-@router.post('', status_code=201, response_model=ID)
-async def create_post(post: Post = Body(..., examples=create_post_requests), session: Session = Depends(db.session)):
+@router.post('', status_code=201, response_model=ID, responses={
+    400: dict(description="You need to login as a character", model=Message),
+    404: dict(description="No such character", model=Message)
+})
+async def create_post(request: Request, post: Post = Body(..., examples=create_post_requests), session: Session = Depends(db.session)):
+    user = request.state.user
+    if user.default_character_id is None:
+        return JSONResponse(status_code=400, content=dict(msg="NO_CHARACTER_ID"))
+    character = Characters.get(session, id=user.default_character_id)
+    if not character:
+        return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_CHARACTER"))
     post_args = {
-        "character_id": post.character_id,
+        "character_id": user.default_character_id,
         "text": post.text,
         "template": "None" if post.template is None else post.template.type
     }
@@ -131,7 +140,7 @@ async def like(request: Request, post_id: int, session: Session = Depends(db.ses
         session.query(Posts).filter_by(id=post_id).update({Posts.num_sunshines: Posts.num_sunshines - 1})
         session.commit()
         session.flush()
-        PostSunshines.filter(session, True, character_id=user.default_character_id, post_id=post.id).delete(True)
+        PostSunshines.filter(session, character_id=user.default_character_id, post_id=post.id).delete(True)
         return JSONResponse(status_code=200, content=dict(msg="UNLIKE_SUCCESS"))
     else:
         session.query(Posts).filter_by(id=post_id).update({Posts.num_sunshines: Posts.num_sunshines - 1})
