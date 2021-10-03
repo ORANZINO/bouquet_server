@@ -53,6 +53,7 @@ async def create_my_character(request: Request, character: CharacterMe, session:
     for hate in character['hates']:
         CharacterHates.create(session, True, hate=hate, character_id=character_id)
     Users.filter(session, id=user.id).update(auto_commit=True, default_character_id=character_id)
+    user.default_character_id = character_id
     token = f"Bearer {create_access_token(data=UserToken.from_orm(user).dict(exclude={'pw', 'marketing_agree'}))}"
     return JSONResponse(status_code=201, content=dict(id=character_id, Authorization=token))
 
