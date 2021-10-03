@@ -56,13 +56,11 @@ def send_notification(sender_id: int, receiver_id: int, category: str, post_id: 
                       session: Session = Depends(db.session)):
     sender, receiver = Characters.get(session, id=sender_id), Characters.get(session, id=receiver_id)
     token = PushTokens.get(session, user_id=receiver.user_id).token
-    print('token: ', token)
-    new_notification = Notifications.create(session, sender_id=sender_id, receiver_id=receiver_id, category=category, post_id=post_id)
+    new_notification = Notifications.create(session, True, sender_id=sender_id, receiver_id=receiver_id, category=category, post_id=post_id)
     if token:
         response = PushClient().publish(
             PushMessage(**generate_message(
                 token, sender, category, (new_notification.created_at + timedelta(hours=9)).isoformat(), post_id)))
-        print("보냈당")
         response.validate_response()
 
 
