@@ -178,6 +178,7 @@ class CharacterProfileList(BaseModel):
 
 class CharacterInfo(CharacterMe):
     id: PositiveInt
+    followed: bool
     num_follows: conint(strict=True, ge=0)
     num_followers: conint(strict=True, ge=0)
     user_info: UserMini
@@ -204,6 +205,7 @@ class CharacterInfo(CharacterMe):
                 "사과(라이벌)"
               ],
               "id": 1,
+              "followed": True,
               "num_follows": 0,
               "num_followers": 1,
               "user_info": {
