@@ -2,7 +2,7 @@ from typing import List, Optional
 from collections import defaultdict
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Header, Body, Query
+from fastapi import APIRouter, Depends, Header, Body, BackgroundTasks
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -13,6 +13,7 @@ from app.routes.auth import create_access_token
 from app.models import CharacterMe, IDWithToken, UserToken, Message, CharacterCard, CharacterInfo, UserMini, UserCharacters, CharacterUpdate, ID, Token
 from app.utils.examples import update_character_requests
 from app.middlewares.token_validator import token_decode
+from app.utils.notification_utils import send_notification
 
 router = APIRouter(prefix='/character')
 
@@ -160,7 +161,7 @@ async def delete_my_character(request: Request, session: Session = Depends(db.se
     400: dict(description="Given character doesn't belong to you", model=Message),
     404: dict(description="No such character", model=Message)
 })
-async def follow(request: Request, character_id: ID, session: Session = Depends(db.session)):
+async def follow(request: Request, character_id: ID, background_tasks: BackgroundTasks, session: Session = Depends(db.session)):
     user = request.state.user
     follower = Characters.get(session, id=user.default_character_id)
     followee = Characters.get(session, id=character_id.id)
@@ -186,6 +187,7 @@ async def follow(request: Request, character_id: ID, session: Session = Depends(
         session.commit()
         session.flush()
         Follows.create(session, True, character_id=followee.id, follower_id=follower.id)
+        background_tasks.add_task(send_notification, follower.id, followee.id, 'Follow', session=session)
         return JSONResponse(status_code=200, content=dict(msg="FOLLOW_SUCCESS"))
 
 

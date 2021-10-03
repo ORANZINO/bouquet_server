@@ -10,7 +10,7 @@ from app.database.conn import db
 from app.common.config import conf
 from app.middlewares.token_validator import access_control
 from app.middlewares.trusted_hosts import TrustedHostMiddleware
-from app.routes import index, auth, users, imgs, characters, posts, search, qnas
+from app.routes import index, auth, users, imgs, characters, posts, search, qnas, notification
 
 API_KEY_HEADER = APIKeyHeader(name="Authorization", auto_error=False)
 
@@ -48,10 +48,12 @@ def create_app():
     app.include_router(characters.router, tags=["Characters"], dependencies=[Depends(API_KEY_HEADER)])
     app.include_router(posts.router, tags=["Posts"], dependencies=[Depends(API_KEY_HEADER)])
     app.include_router(qnas.router, tags=["Q&As"], dependencies=[Depends(API_KEY_HEADER)])
+    app.include_router(notification.router, tags=["Notification"], dependencies=[Depends(API_KEY_HEADER)])
     return app
 
 
 app = create_app()
+
 
 
 if __name__ == "__main__":
