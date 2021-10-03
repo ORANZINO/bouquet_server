@@ -373,15 +373,16 @@ class CommentMini(BaseModel):
 
 # For QnAs
 
-class QnA(BaseModel):
+class Question(BaseModel):
     question: constr(strict=True) = Field(..., example="제일 좋아하는 과일은?")
+
+
+class QnA(Question):
     answer: constr(strict=True) = Field(..., example="오렌지.")
 
 
-class QnARow(BaseModel):
+class QnARow(QnA):
     id: PositiveInt
-    question: constr(strict=True)
-    answer: constr(strict=True)
     num_sunshines: conint(strict=True, ge=0)
 
 
@@ -393,6 +394,12 @@ class QnAList(BaseModel):
     character_name: constr(strict=True)
     profile_img: AnyHttpUrl
     qnas: List[Optional[QnARowWithLike]]
+
+
+# For Notification
+
+class ExponentPushToken(BaseModel):
+    token: constr(strict=True) = Field(..., example='ExponentPushToken[ao8g3tHL8052V33aI9hREo]')
 
 
 # For Imgs
