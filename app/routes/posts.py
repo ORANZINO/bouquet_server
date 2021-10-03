@@ -147,6 +147,31 @@ async def like(request: Request, post_id: int, session: Session = Depends(db.ses
         session.commit()
         session.flush()
         PostSunshines.create(session, True, character_id=user.default_character_id, post_id=post.id)
+        background_tasks.add_task(send_notification, user.default_character_id, post.character_id, "LikeComment", post.id, session)
+        return JSONResponse(status_code=200, content=dict(msg="LIKE_SUCCESS"))
+
+
+@router.post('/comment/like/{comment_id}', status_code=200, response_model=Message, responses={
+    404: dict(description="No such comment", model=Message)
+})
+async def like_comment(request: Request, comment_id: int, background_tasks: BackgroundTasks, session: Session = Depends(db.session)):
+    user = request.state.user
+    comment = Comments.get(session, id=comment_id)
+    if not comment:
+        return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_COMMENT"))
+    like_exists = CommentSunshines.get(session, character_id=user.default_character_id, comment_id=comment_id)
+    if like_exists:
+        session.query(Comments).filter_by(id=comment_id).update({Comments.num_sunshines: Comments.num_sunshines - 1})
+        session.commit()
+        session.flush()
+        CommentSunshines.filter(session, character_id=user.default_character_id, comment_id=comment_id).delete(True)
+        return JSONResponse(status_code=200, content=dict(msg="UNLIKE_SUCCESS"))
+    else:
+        session.query(Comments).filter_by(id=comment_id).update({Comments.num_sunshines: Comments.num_sunshines + 1})
+        session.commit()
+        session.flush()
+        CommentSunshines.create(session, True, character_id=user.default_character_id, comment_id=comment_id, post_id=comment.post_id)
+        background_tasks.add_task(send_notification, user.default_character_id, comment.character_id, "LikeComment", comment.post_id, session)
         return JSONResponse(status_code=200, content=dict(msg="LIKE_SUCCESS"))
 
 
