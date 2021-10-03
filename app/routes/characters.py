@@ -12,6 +12,7 @@ from app.database.schema import Users, Characters, CharacterHates, CharacterLike
 from app.routes.auth import create_access_token
 from app.models import CharacterMe, IDWithToken, UserToken, Message, CharacterCard, CharacterInfo, UserMini, UserCharacters, CharacterUpdate, ID, Token
 from app.utils.examples import update_character_requests
+from app.middlewares.token_validator import token_decode
 
 router = APIRouter(prefix='/character')
 
@@ -95,7 +96,7 @@ async def who_am_i(request: Request, session: Session = Depends(db.session)):
 @router.get('/{character_name}', status_code=200, response_model=CharacterInfo, responses={
     404: dict(description="No such character", model=Message)
 })
-async def get_character(character_name: str, session: Session = Depends(db.session)):
+async def get_character(character_name: str, token: Optional[str] = Header(None), session: Session = Depends(db.session)):
     character = session.query(Users, Characters).filter(Characters.name == character_name).join(Users.character).first()
     if not character:
         return JSONResponse(status_code=404, content=dict(msg="WRONG_CHARACTER_NAME"))
@@ -105,6 +106,14 @@ async def get_character(character_name: str, session: Session = Depends(db.sessi
     hates = CharacterHates.filter(session, character_id=character.id).all()
     setattr(character, 'likes', [like.like for like in likes])
     setattr(character, 'hates', [hate.hate for hate in hates])
+
+    if token is None:
+        setattr(character, 'followed', False)
+    else:
+        user = await token_decode(access_token=token)
+        follower_id = user['default_character_id']
+        setattr(character, 'followed', bool(Follows.get(session, character_id=character.id, follower_id=follower_id)))
+
     character = CharacterInfo.from_orm(character).dict()
     return JSONResponse(status_code=200, content=character)
 
