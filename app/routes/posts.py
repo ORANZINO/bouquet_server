@@ -1,14 +1,15 @@
 
-from fastapi import APIRouter, Depends, Header, Body, Request
+from fastapi import APIRouter, Depends, Header, Body, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 from app.utils.post_utils import process_post, process_comment
 from app.database.conn import db
-from app.database.schema import Posts, Images, Albums, Diaries, Lists, ListComponents, Tracks, Comments, Characters, PostSunshines
+from app.database.schema import Posts, Images, Albums, Diaries, Lists, ListComponents, Tracks, Comments, Characters, PostSunshines, CommentSunshines
 from typing import Optional
 from app.models import Post, Comment, PostResponseWithComments, Message, ID, PostListWithNum
 from app.utils.examples import get_post_responses, create_post_requests
 from app.middlewares.token_validator import token_decode
+from app.utils.notification_utils import send_notification
 
 router = APIRouter(prefix='/post')
 
@@ -76,11 +77,13 @@ async def delete_post(request: Request, post_id: int, session: Session = Depends
 
 
 @router.post('/comment', status_code=201, response_model=ID)
-async def create_comment(request: Request, comment: Comment, session: Session = Depends(db.session)):
+async def create_comment(request: Request, comment: Comment, background_tasks: BackgroundTasks, session: Session = Depends(db.session)):
     user = request.state.user
     comment = dict(comment)
     comment['character_id'] = user.default_character_id
     new_comment = Comments.create(session, True, **dict(comment))
+    post = Posts.get(session, id=comment['post_id'])
+    background_tasks.add_task(send_notification, user.default_character_id, post.character_id, "Comment", post.id, session)
     return JSONResponse(status_code=201, content=dict(id=new_comment.id))
 
 
@@ -127,14 +130,14 @@ async def get_character_posts(character_name: str, page_num: int, session: Sessi
     return JSONResponse(status_code=200, content=dict(posts=posts, total_post_num=total_post_num))
 
 
-@router.post('/like/{post_id}', status_code=200, responses={
+@router.post('/like/{post_id}', status_code=200, response_model=Message, responses={
     404: dict(description="No such post", model=Message)
 })
-async def like(request: Request, post_id: int, session: Session = Depends(db.session)):
+async def like_post(request: Request, post_id: int, background_tasks: BackgroundTasks, session: Session = Depends(db.session)):
     user = request.state.user
     post = Posts.get(session, id=post_id)
     if not post:
-        return JSONResponse(status_code=404, content=dict(msg="WRONG_POST_ID"))
+        return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_POST"))
     like_exists = PostSunshines.get(session, character_id=user.default_character_id, post_id=post_id)
     if like_exists:
         session.query(Posts).filter_by(id=post_id).update({Posts.num_sunshines: Posts.num_sunshines - 1})
@@ -147,6 +150,31 @@ async def like(request: Request, post_id: int, session: Session = Depends(db.ses
         session.commit()
         session.flush()
         PostSunshines.create(session, True, character_id=user.default_character_id, post_id=post.id)
+        background_tasks.add_task(send_notification, user.default_character_id, post.character_id, "LikeComment", post.id, session)
+        return JSONResponse(status_code=200, content=dict(msg="LIKE_SUCCESS"))
+
+
+@router.post('/comment/like/{comment_id}', status_code=200, response_model=Message, responses={
+    404: dict(description="No such comment", model=Message)
+})
+async def like_comment(request: Request, comment_id: int, background_tasks: BackgroundTasks, session: Session = Depends(db.session)):
+    user = request.state.user
+    comment = Comments.get(session, id=comment_id)
+    if not comment:
+        return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_COMMENT"))
+    like_exists = CommentSunshines.get(session, character_id=user.default_character_id, comment_id=comment_id)
+    if like_exists:
+        session.query(Comments).filter_by(id=comment_id).update({Comments.num_sunshines: Comments.num_sunshines - 1})
+        session.commit()
+        session.flush()
+        CommentSunshines.filter(session, character_id=user.default_character_id, comment_id=comment_id).delete(True)
+        return JSONResponse(status_code=200, content=dict(msg="UNLIKE_SUCCESS"))
+    else:
+        session.query(Comments).filter_by(id=comment_id).update({Comments.num_sunshines: Comments.num_sunshines + 1})
+        session.commit()
+        session.flush()
+        CommentSunshines.create(session, True, character_id=user.default_character_id, comment_id=comment_id, post_id=comment.post_id)
+        background_tasks.add_task(send_notification, user.default_character_id, comment.character_id, "LikeComment", comment.post_id, session)
         return JSONResponse(status_code=200, content=dict(msg="LIKE_SUCCESS"))
 
 
