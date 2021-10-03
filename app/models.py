@@ -284,7 +284,6 @@ class ListTemplate(BaseModel):
 
 
 class Post(BaseModel):
-    character_id: PositiveInt = Field(..., example=1)
     text: Optional[constr(strict=True)] = Field(None, example='ㅎㅇ')
     template: Union[NoTemplate, ImageTemplate, DiaryTemplate, AlbumTemplate, ListTemplate]
 
@@ -301,7 +300,6 @@ class Comment(BaseModel):
         schema_extra = {
             "example": {
                 "post_id": 1,
-                "character_id": 1,
                 "comment": "이 노래를 불러보지만 내 진심이 닿을지 몰라",
                 "parent": 0
             }

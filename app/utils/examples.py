@@ -45,7 +45,6 @@ update_character_requests = {
 create_post_requests = {
     "Plain": {
         "value": {
-            "character_id": 1,
             "text": "이것이 포스팅이다.",
             "template": {
                 "type": "None"
@@ -54,7 +53,6 @@ create_post_requests = {
     },
     "Image": {
         "value": {
-                "character_id": 1,
                 "text": "orange pic",
                 "template": {
                     "type": "Image",
@@ -64,7 +62,6 @@ create_post_requests = {
     },
     "Diary": {
         "value": {
-                "character_id": 1,
                 "text": "오늘은 일기를 썼다.",
                 "template": {
                     "type": "Diary",
@@ -78,7 +75,6 @@ create_post_requests = {
     },
     "Album": {
         "value": {
-                "character_id": 1,
                 "text": "새 앨범이 나왔어용",
                 "template": {
                     "type": "Album",
@@ -92,7 +88,6 @@ create_post_requests = {
     },
     "List": {
         "value": {
-                "character_id": 1,
                 "text": "제가 좋아하는 것들입니당",
                 "template": {
                     "type": "List",
