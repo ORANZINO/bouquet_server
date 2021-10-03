@@ -143,7 +143,7 @@ async def like(request: Request, post_id: int, session: Session = Depends(db.ses
         PostSunshines.filter(session, character_id=user.default_character_id, post_id=post.id).delete(True)
         return JSONResponse(status_code=200, content=dict(msg="UNLIKE_SUCCESS"))
     else:
-        session.query(Posts).filter_by(id=post_id).update({Posts.num_sunshines: Posts.num_sunshines - 1})
+        session.query(Posts).filter_by(id=post_id).update({Posts.num_sunshines: Posts.num_sunshines + 1})
         session.commit()
         session.flush()
         PostSunshines.create(session, True, character_id=user.default_character_id, post_id=post.id)
