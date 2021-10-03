@@ -400,6 +400,10 @@ class QnAList(BaseModel):
 
 # For Notification
 
+class Count(BaseModel):
+    count: conint(strict=True, ge=0) = Field(..., example=7)
+
+
 class ExponentPushToken(BaseModel):
     token: constr(strict=True) = Field(..., example='ExponentPushToken[ao8g3tHL8052V33aI9hREo]')
 
