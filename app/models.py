@@ -387,6 +387,9 @@ class QnARow(QnA):
     id: PositiveInt
     num_sunshines: conint(strict=True, ge=0)
 
+    class Config:
+        orm_mode = True
+
 
 class QnARowWithLike(QnARow):
     liked: bool

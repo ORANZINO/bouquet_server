@@ -22,10 +22,10 @@ async def create_qna(request: Request, qna: QnA, session: Session = Depends(db.s
     return JSONResponse(status_code=201, content=dict(id=new_qna.id))
 
 
-@router.get('/{character_name}/{page_num}', status_code=200, response_model=QnAList, responses={
+@router.get('/{character_name}', status_code=200, response_model=QnAList, responses={
     404: dict(description="No such character", model=Message)
 })
-async def get_character_qna(character_name: str, page_num: int, session: Session = Depends(db.session)):
+async def get_character_qna(character_name: str, page_num: int = Header(1), session: Session = Depends(db.session)):
     character = Characters.get(session, name=character_name)
     if not character:
         return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_CHARACTER"))
@@ -33,9 +33,9 @@ async def get_character_qna(character_name: str, page_num: int, session: Session
         .offset((page_num - 1) * 10).limit(10).all()
     qnas = [QnARow.from_orm(qna).dict() for qna in qnas]
     for i, qna in enumerate(qnas):
-        qnas[i]['liked'] = bool(QnASunshines.get(session, character_id=character.id, qna_id=qna.id))
+        qnas[i]['liked'] = bool(QnASunshines.get(session, character_id=character.id, qna_id=qna['id']))
 
-    return JSONResponse(status_code=201, content=dict(character_name=character.name, profile_img=character.profile_img,
+    return JSONResponse(status_code=200, content=dict(character_name=character.name, profile_img=character.profile_img,
                                                       qnas=qnas))
 
 
@@ -58,7 +58,7 @@ async def create_question(question: Question, session: Session = Depends(db.sess
     return JSONResponse(status_code=201, content=dict(id=new_qna.id))
 
 
-@router.get('/question', status_code=200, response_model=Question)
+@router.get('/question/new', status_code=200, response_model=Question)
 async def get_question(session: Session = Depends(db.session)):
     question = session.query(Questions).order_by(func.rand()).first()
     return JSONResponse(status_code=200, content=dict(question=question.question))
