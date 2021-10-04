@@ -32,7 +32,7 @@ async def get_my_notifications(request: Request, page_num: Optional[int] = Heade
         return JSONResponse(status_code=400, content=dict(msg="NO_GIVEN_CHARACTER"))
 
     notifications = session.query(Notifications, Characters).filter(Notifications.receiver_id == user.default_character_id)\
-        .join(Characters.receiver).order_by(Notifications.created_at.desc()).offset((page_num - 1) * 15).limit(15).all()
+        .join(Characters.sender).order_by(Notifications.created_at.desc()).offset((page_num - 1) * 15).limit(15).all()
     for i, notification in enumerate(notifications):
         notification[0].created_at = (notification[0].created_at + timedelta(hours=9)).isoformat()
         notification[0].sender_name = notification[1].name
