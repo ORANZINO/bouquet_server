@@ -45,7 +45,7 @@ async def create_post(request: Request, post: Post = Body(..., examples=create_p
         elif template_type == "Album":
             tracks = template['tracks']
             del template['tracks']
-            template['artist'] = Characters.get(session, id=post.character_id).name
+            template['artist'] = Characters.get(session, id=new_post.character_id).name
             new_album = Albums.create(session, True, **template)
             for track in tracks:
                 track['album_id'] = new_album.id
