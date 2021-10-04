@@ -8,7 +8,7 @@ from app.database.conn import db
 from app.database.schema import Characters, QnASunshines, QnAs, Questions
 
 from app.models import ID, QnA, Message, QnARow, QnAList, Question
-from app.utils.examples import get_post_responses, create_post_requests
+from app.utils.notification_utils import send_notification
 
 router = APIRouter(prefix='/qna')
 
@@ -22,10 +22,10 @@ async def create_qna(request: Request, qna: QnA, session: Session = Depends(db.s
     return JSONResponse(status_code=201, content=dict(id=new_qna.id))
 
 
-@router.get('/{character_name}/{page_num}', status_code=200, response_model=QnAList, responses={
+@router.get('/{character_name}', status_code=200, response_model=QnAList, responses={
     404: dict(description="No such character", model=Message)
 })
-async def get_character_qna(character_name: str, page_num: int, session: Session = Depends(db.session)):
+async def get_character_qna(character_name: str, page_num: int = Header(1), session: Session = Depends(db.session)):
     character = Characters.get(session, name=character_name)
     if not character:
         return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_CHARACTER"))
@@ -33,10 +33,37 @@ async def get_character_qna(character_name: str, page_num: int, session: Session
         .offset((page_num - 1) * 10).limit(10).all()
     qnas = [QnARow.from_orm(qna).dict() for qna in qnas]
     for i, qna in enumerate(qnas):
-        qnas[i]['liked'] = bool(QnASunshines.get(session, character_id=character.id, qna_id=qna.id))
+        qnas[i]['liked'] = bool(QnASunshines.get(session, character_id=character.id, qna_id=qna['id']))
 
-    return JSONResponse(status_code=201, content=dict(character_name=character.name, profile_img=character.profile_img,
+    return JSONResponse(status_code=200, content=dict(character_name=character.name, profile_img=character.profile_img,
                                                       qnas=qnas))
+
+
+@router.post('/like/{qna_id}', status_code=200, response_model=Message, responses={
+    400: dict(description="You should have character to like", model=Message),
+    404: dict(description="No such Q&A", model=Message)
+})
+async def like_qna(request: Request, qna_id: int, session: Session = Depends(db.session)):
+    user = request.state.user
+    if user.default_character_id is None:
+        return JSONResponse(status_code=400, content=dict(msg="NO_GIVEN_CHARACTER"))
+    qna = QnAs.get(session, id=qna_id)
+    if not qna:
+        return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_Q&A"))
+    like_exists = QnASunshines.get(session, character_id=user.default_character_id, qna_id=qna_id)
+    if like_exists:
+        session.query(QnAs).filter_by(id=qna_id).update({QnAs.num_sunshines: QnAs.num_sunshines - 1})
+        session.commit()
+        session.flush()
+        QnASunshines.filter(session, character_id=user.default_character_id, qna_id=qna.id).delete(True)
+        return JSONResponse(status_code=200, content=dict(msg="UNLIKE_SUCCESS"))
+    else:
+        session.query(QnAs).filter_by(id=qna_id).update({QnAs.num_sunshines: QnAs.num_sunshines + 1})
+        session.commit()
+        session.flush()
+        QnASunshines.create(session, True, character_id=user.default_character_id, qna_id=qna.id)
+        return JSONResponse(status_code=200, content=dict(msg="LIKE_SUCCESS"))
+
 
 
 @router.delete('', status_code=204, responses={
@@ -58,7 +85,7 @@ async def create_question(question: Question, session: Session = Depends(db.sess
     return JSONResponse(status_code=201, content=dict(id=new_qna.id))
 
 
-@router.get('/question', status_code=200, response_model=Question)
+@router.get('/question/new', status_code=200, response_model=Question)
 async def get_question(session: Session = Depends(db.session)):
     question = session.query(Questions).order_by(func.rand()).first()
     return JSONResponse(status_code=200, content=dict(question=question.question))
