@@ -21,6 +21,11 @@ class Email(BaseModel):
     email: EmailStr = Field(..., example='oranz@naver.com')
 
 
+class EmailWithPW(Email):
+    email: EmailStr = Field(..., example='oranz@naver.com')
+    pw: constr(strict=True) = Field(..., example='12345678')
+
+
 class UserName(BaseModel):
     user_name: constr(strict=True) = Field(..., example='고팡서')
 
