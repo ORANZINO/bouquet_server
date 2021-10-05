@@ -1,17 +1,20 @@
 from datetime import datetime, timedelta
 
 import bcrypt
-import base64
+import boto3
+from os import environ
 import jwt
 from fastapi import APIRouter, Depends, Header, Body
 
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
-
+from botocore.exceptions import ClientError
 from app.common.consts import JWT_SECRET, JWT_ALGORITHM
 from app.database.conn import db
 from app.database.schema import Users, Characters
-from app.models import SnsType, Token, UserToken, UserRegister, UserLogin, Email, UserName, CharacterName, Duplicated, Message
+from app.models import SnsType, Token, UserToken, UserRegister, UserLogin, Email, UserName, CharacterName, Duplicated, \
+    Message, VerificationCode
+from random import randint
 
 """
 1. 구글 로그인을 위한 구글 앱 준비 (구글 개발자 도구)
@@ -40,8 +43,102 @@ from app.models import SnsType, Token, UserToken, UserRegister, UserLogin, Email
 
 """
 
-
 router = APIRouter(prefix="/auth")
+
+
+@router.post("/email", status_code=200, response_model=VerificationCode, responses={
+    202: dict(description="Given email is already being used.", model=Message),
+    500: dict(description="Failed sending the email.", model=Message)
+})
+async def verify_email(recipient: Email = Body(...), session: Session = Depends(db.session)):
+    user = Users.get(session, email=recipient.email)
+    if user:
+        return JSONResponse(status_code=202, content=dict(msg="EMAIL_EXISTS"))
+    sender = "Bouquet <noreply@bouquet.ooo>"
+    title = "Bouquet 서비스에 가입하기 위한 이메일 인증 메일입니다."
+    charset = "UTF-8"
+    verification_num = randint(0, 999999)
+    verification_code = str(verification_num)
+    verification_code = '0' * (6 - len(verification_code)) + verification_code
+    client = boto3.client(service_name='ses',
+                          region_name=environ.get("SES_REGION"),
+                          aws_access_key_id=environ.get('SES_ACCESS_KEY_ID'),
+                          aws_secret_access_key=environ.get('SES_ACCESS_KEY'))
+    body_html = f"""
+        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <title>Email from Bouquet</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    </head>
+    <body>
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff">
+        <tr>
+          <td style="padding-top:40px; padding-bottom:0; padding-left: 20px; padding-right: 0">
+            <img src="https://bouquet-storage.s3.ap-northeast-2.amazonaws.com/c535fa74-239d-11ec-8f8a-0242ac110002.png" alt="Bouquet Logo" width="40" height="40" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-left:20px; padding-right:0; padding-top:60px; padding-bottom:0; font-size:32px;">
+            메일 인증
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-left:20px; padding-right:0; padding-top:40px; padding-bottom:0; font-size:16px; color: #3c3c3c">
+            안녕하세요. Bouquet에서 새로운 모습을 피우고 계시군요!<br />
+            <br />
+            인증 번호는 <b>{verification_code}</b>입니다.<br />
+            인증 번호를 입력해서 회원가입을 계속 진행해 보세요.<br />
+            <br />
+            Bouquet를 이용해 주셔서 감사합니다.<br />
+            문제나 궁금한 점, 피드백 등은 언제나 Bouquet 팀으로 연락 주세요.<br />
+            <br/>
+            <b>Bouquet</b> 드림<br />
+            noreply@bouquet.ooo
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-left:20px; padding-right:0; padding-top:40px; padding-bottom:0;">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff" style="padding-top:40px; padding-bottom:0; padding-left:0; padding-right:0; border-top-style:solid;border-top-color:#ebeaef;border-width:1px">
+              <tr style="color:#999999; font-size:14px;">
+                <td>
+                  이 메일은 Bouquet 가입 과정에서 메일 인증을 위해 발송되었습니다.<br />
+                  메일 인증 요청을 보낸 적이 없다면, 이 메일을 무시해 주세요.
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+    """
+    try:
+        response = client.send_email(
+            Destination={
+                'ToAddresses': [recipient.email]
+            },
+            Message={
+                'Body': {
+                    'Html': {
+                        'Charset': charset,
+                        'Data': body_html,
+                    },
+                },
+                'Subject': {
+                    'Charset': charset,
+                    'Data': title,
+                },
+            },
+            Source=sender,
+        )
+    except ClientError as e:
+        print(e.response['Error']['Message'])
+        return JSONResponse(status_code=500, content=dict(msg="FAILED_SENDING_EMAIL"))
+    else:
+        print(f"Email sent! Message ID: {response['MessageId']}")
+        return JSONResponse(status_code=200, content=dict(verification_code=verification_code))
 
 
 @router.post("/email/check", status_code=200, response_model=Duplicated)
@@ -79,8 +176,9 @@ async def register(sns_type: SnsType, reg_info: UserRegister, session: Session =
         if is_exist:
             return JSONResponse(status_code=202, content=dict(msg="EMAIL_EXISTS"))
         hash_pw = bcrypt.hashpw(reg_info.pw.encode("utf-8"), bcrypt.gensalt())
-        new_user = Users.create(session, auto_commit=True, pw=hash_pw, email=reg_info.email, name=reg_info.name, profile_img=reg_info.profile_img, sns_type='Email')
-        token = f"Bearer {create_access_token(data=UserToken.from_orm(new_user).dict(exclude={'pw', 'marketing_agree'}),)}"
+        new_user = Users.create(session, auto_commit=True, pw=hash_pw, email=reg_info.email, name=reg_info.name,
+                                profile_img=reg_info.profile_img, sns_type='Email')
+        token = f"Bearer {create_access_token(data=UserToken.from_orm(new_user).dict(exclude={'pw', 'marketing_agree'}), )}"
         return dict(Authorization=token)
     return JSONResponse(status_code=404, content=dict(msg="NOT_SUPPORTED"))
 
@@ -99,7 +197,7 @@ async def login(sns_type: SnsType, user_info: UserLogin = Body(...)):
         if not is_verified:
             return JSONResponse(status_code=400, content=dict(msg="NO_MATCH_USER"))
         token = dict(
-            Authorization=f"Bearer {create_access_token(data=UserToken.from_orm(user).dict(exclude={'pw', 'marketing_agree'}),)}")
+            Authorization=f"Bearer {create_access_token(data=UserToken.from_orm(user).dict(exclude={'pw', 'marketing_agree'}))}")
         return token
     return JSONResponse(status_code=400, content=dict(msg="NOT_SUPPORTED"))
 
@@ -117,4 +215,3 @@ def create_access_token(*, data: dict = None, expires_delta: int = None):
         to_encode.update({"exp": datetime.utcnow() + timedelta(hours=expires_delta)})
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return encoded_jwt
-
