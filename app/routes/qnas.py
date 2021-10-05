@@ -6,9 +6,10 @@ from starlette.responses import JSONResponse
 from app.utils.post_utils import process_post, process_comment
 from app.database.conn import db
 from app.database.schema import Characters, QnASunshines, QnAs, Questions
-
+from typing import Optional
 from app.models import ID, QnA, Message, QnARow, QnAList, Question
 from app.utils.notification_utils import send_notification
+from app.middlewares.token_validator import token_decode
 
 router = APIRouter(prefix='/qna')
 
@@ -25,15 +26,21 @@ async def create_qna(request: Request, qna: QnA, session: Session = Depends(db.s
 @router.get('/{character_name}', status_code=200, response_model=QnAList, responses={
     404: dict(description="No such character", model=Message)
 })
-async def get_character_qna(character_name: str, page_num: int = Header(1), session: Session = Depends(db.session)):
+async def get_character_qna(character_name: str, token: Optional[str] = Header(None), page_num: int = Header(1), session: Session = Depends(db.session)):
     character = Characters.get(session, name=character_name)
     if not character:
         return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_CHARACTER"))
     qnas = session.query(QnAs).filter(QnAs.respondent_id == character.id).order_by(QnAs.created_at.desc()) \
         .offset((page_num - 1) * 10).limit(10).all()
     qnas = [QnARow.from_orm(qna).dict() for qna in qnas]
-    for i, qna in enumerate(qnas):
-        qnas[i]['liked'] = bool(QnASunshines.get(session, character_id=character.id, qna_id=qna['id']))
+    if token is not None:
+        user = await token_decode(access_token=token)
+        character_id = user['default_character_id']
+        for i, qna in enumerate(qnas):
+            qnas[i]['liked'] = bool(QnASunshines.get(session, character_id=character_id, qna_id=qna['id']))
+    else:
+        for i, qna in enumerate(qnas):
+            qnas[i]['liked'] = False
 
     return JSONResponse(status_code=200, content=dict(character_name=character.name, profile_img=character.profile_img,
                                                       qnas=qnas))
@@ -63,7 +70,6 @@ async def like_qna(request: Request, qna_id: int, session: Session = Depends(db.
         session.flush()
         QnASunshines.create(session, True, character_id=user.default_character_id, qna_id=qna.id)
         return JSONResponse(status_code=200, content=dict(msg="LIKE_SUCCESS"))
-
 
 
 @router.delete('', status_code=204, responses={
