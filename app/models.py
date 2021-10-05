@@ -460,6 +460,9 @@ class SexType(IntEnum, Enum):
 
 # For Auth
 
+class VerificationCode(BaseModel):
+    verification_code: constr(strict=True, regex="[0-9]{6}") = Field(..., example="059287")
+
 
 class UserToken(BaseModel):
     id: PositiveInt
