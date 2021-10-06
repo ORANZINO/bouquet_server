@@ -86,7 +86,7 @@ async def verify_email(recipient: Email = Body(...), session: Session = Depends(
         </tr>
         <tr>
           <td style="padding-left:20px; padding-right:0; padding-top:40px; padding-bottom:0; font-size:16px; color: #3c3c3c">
-            안녕하세요. Bouquet에서 새로운 모습을 피우고 계시군요!<br />
+            안녕하세요. Bouquet에서 새로운 모습을 꽃피우고 계시군요!<br />
             <br />
             인증 번호는 <b>{verification_code}</b>입니다.<br />
             인증 번호를 입력해서 회원가입을 계속 진행해 보세요.<br />
@@ -157,6 +157,101 @@ async def check_user_name(user_name: UserName = Body(...), session: Session = De
 async def check_character_name(character_name: CharacterName = Body(...), session: Session = Depends(db.session)):
     character = Characters.get(session, name=character_name.character_name)
     return {"duplicated": bool(character)}
+
+
+@router.post("/user/email", status_code=200, response_model=VerificationCode, responses={
+    404: dict(description="Given email doesn't exist.", model=Message),
+    500: dict(description="Failed sending the email.", model=Message)
+})
+async def verify_user_email(recipient: Email = Body(...), session: Session = Depends(db.session)):
+    user = Users.get(session, email=recipient.email)
+    if not user:
+        return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_EMAIL"))
+    sender = "Bouquet <noreply@bouquet.ooo>"
+    title = "Bouquet 서비스에서 비밀번호 변경을 위한 이메일 인증 메일입니다."
+    charset = "UTF-8"
+    verification_num = randint(0, 999999)
+    verification_code = str(verification_num)
+    verification_code = '0' * (6 - len(verification_code)) + verification_code
+    client = boto3.client(service_name='ses',
+                          region_name=environ.get("SES_REGION"),
+                          aws_access_key_id=environ.get('SES_ACCESS_KEY_ID'),
+                          aws_secret_access_key=environ.get('SES_ACCESS_KEY'))
+    body_html = f"""
+        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <title>Email from Bouquet</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    </head>
+    <body>
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff">
+        <tr>
+          <td style="padding-top:40px; padding-bottom:0; padding-left: 20px; padding-right: 0">
+            <img src="https://bouquet-storage.s3.ap-northeast-2.amazonaws.com/c535fa74-239d-11ec-8f8a-0242ac110002.png" alt="Bouquet Logo" width="40" height="40" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-left:20px; padding-right:0; padding-top:60px; padding-bottom:0; font-size:32px;">
+            메일 인증
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-left:20px; padding-right:0; padding-top:40px; padding-bottom:0; font-size:16px; color: #3c3c3c">
+            안녕하세요. 비밀번호를 잊으셔서 재미있는 Bouquet를 이용하지 못하고 계시단 소식을 듣고 달려왔습니다!<br />
+            <br />
+            인증 번호는 <b>{verification_code}</b>입니다.<br />
+            인증 번호를 입력해서 비밀번호 변경을 진행해 보세요.<br />
+            <br />
+            Bouquet를 이용해 주셔서 감사합니다.<br />
+            문제나 궁금한 점, 피드백 등은 언제나 Bouquet 팀으로 연락 주세요.<br />
+            <br/>
+            <b>Bouquet</b> 드림<br />
+            noreply@bouquet.ooo
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-left:20px; padding-right:0; padding-top:40px; padding-bottom:0;">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff" style="padding-top:40px; padding-bottom:0; padding-left:0; padding-right:0; border-top-style:solid;border-top-color:#ebeaef;border-width:1px">
+              <tr style="color:#999999; font-size:14px;">
+                <td>
+                  이 메일은 Bouquet 가입 과정에서 메일 인증을 위해 발송되었습니다.<br />
+                  메일 인증 요청을 보낸 적이 없다면, 이 메일을 무시해 주세요.
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+    """
+    try:
+        response = client.send_email(
+            Destination={
+                'ToAddresses': [recipient.email]
+            },
+            Message={
+                'Body': {
+                    'Html': {
+                        'Charset': charset,
+                        'Data': body_html,
+                    },
+                },
+                'Subject': {
+                    'Charset': charset,
+                    'Data': title,
+                },
+            },
+            Source=sender,
+        )
+    except ClientError as e:
+        print(e.response['Error']['Message'])
+        return JSONResponse(status_code=500, content=dict(msg="FAILED_SENDING_EMAIL"))
+    else:
+        print(f"Email sent! Message ID: {response['MessageId']}")
+        return JSONResponse(status_code=200, content=dict(verification_code=verification_code))
 
 
 @router.patch('/user/change-pw', status_code=204, description="Successfully changed password", responses={
