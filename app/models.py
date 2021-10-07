@@ -93,7 +93,7 @@ class IDWithToken(BaseModel):
 class CharacterMe(BaseModel):
     name: constr(strict=True)
     profile_img: Optional[AnyHttpUrl]
-    birth: conint(strict=True, gt=0, lt=100000000)
+    birth: constr(strict=True, regex="[0-9]{4,8}")
     job: constr(strict=True)
     nationality: constr(strict=True)
     intro: constr(strict=True)
@@ -107,7 +107,7 @@ class CharacterMe(BaseModel):
             "example": {
                 "name": "오란지",
                 "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-                "birth": 19990601,
+                "birth": "19990601",
                 "job": "과일",
                 "nationality": "플로리다",
                 "intro": "상큼합니다.",
@@ -122,7 +122,7 @@ class CharacterUpdate(BaseModel):
     id: PositiveInt = Field(...)
     name: Optional[constr(strict=True)] = Field(None)
     profile_img: Optional[AnyHttpUrl] = Field(None)
-    birth: Optional[conint(strict=True, gt=0, lt=100000000)] = None
+    birth: Optional[constr(strict=True, regex="[0-9]{4,8}")] = None
     job: Optional[constr(strict=True)] = Field(None)
     nationality: Optional[constr(strict=True)] = Field(None)
     intro: Optional[constr(strict=True)] = Field(None)
@@ -137,7 +137,7 @@ class CharacterUpdate(BaseModel):
                 "id": 1,
                 "name": "오란지",
                 "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-                "birth": 19990601,
+                "birth": "19990601",
                 "job": "과일",
                 "nationality": "플로리다",
                 "intro": "상큼합니다.",
@@ -158,7 +158,7 @@ class CharacterProfile(CharacterMe):
               "id": 1,
               "name": "오란지",
               "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-              "birth": 19990601,
+              "birth": "19990601",
               "job": "과일",
               "nationality": "플로리다",
               "intro": "상큼합니다.",
@@ -194,7 +194,7 @@ class CharacterInfo(CharacterMe):
             "example": {
               "name": "오란지",
               "profile_img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-              "birth": 19990601,
+              "birth": "19990601",
               "job": "과일",
               "nationality": "플로리다",
               "intro": "상큼합니다.",
@@ -258,7 +258,7 @@ class DiaryTemplate(BaseModel):
     title: constr(strict=True)
     weather: constr(strict=True)
     img: Optional[AnyHttpUrl]
-    date: constr(strict=True, regex="[0-9]{8}") = Field(..., example="19990603")
+    date: constr(strict=True, regex="[0-9]{4,8}") = Field(..., example="19990603")
     content: constr(strict=True)
 
 
@@ -272,7 +272,7 @@ class AlbumTemplate(BaseModel):
     title: constr(strict=True)
     img: AnyHttpUrl
     description: Optional[constr(strict=True)]
-    release_date: constr(strict=True, regex="[0-9]{8}") = Field(..., example="20000918")
+    release_date: constr(strict=True, regex="[0-9]{4,8}") = Field(..., example="20000918")
     tracks: List[AlbumTrack]
 
 
