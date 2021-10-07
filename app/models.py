@@ -258,7 +258,7 @@ class DiaryTemplate(BaseModel):
     title: constr(strict=True)
     weather: constr(strict=True)
     img: Optional[AnyHttpUrl]
-    date: conint(strict=True, gt=0, lt=100000000)
+    date: constr(strict=True, regex="[0-9]{8}") = Field(..., example="19990603")
     content: constr(strict=True)
 
 
@@ -272,7 +272,7 @@ class AlbumTemplate(BaseModel):
     title: constr(strict=True)
     img: AnyHttpUrl
     description: Optional[constr(strict=True)]
-    release_date: conint(strict=True, gt=0, lt=100000000)
+    release_date: constr(strict=True, regex="[0-9]{8}") = Field(..., example="20000918")
     tracks: List[AlbumTrack]
 
 
