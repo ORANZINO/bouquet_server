@@ -1,10 +1,12 @@
-
+import boto3
+from botocore.exceptions import ClientError
+from os import environ
 from fastapi import APIRouter, Depends, Header, Body, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 from app.utils.post_utils import process_post, process_comment
 from app.database.conn import db
-from app.database.schema import Posts, Images, Albums, Diaries, Lists, ListComponents, Tracks, Comments, Characters, PostSunshines, CommentSunshines
+from app.database.schema import Posts, Images, Albums, Diaries, Lists, ListComponents, Tracks, Comments, Characters, PostSunshines, CommentSunshines, Users
 from typing import Optional
 from app.models import Post, Comment, PostResponseWithComments, Message, ID, PostListWithNum
 from app.utils.examples import get_post_responses, create_post_requests
@@ -182,6 +184,92 @@ async def like_comment(request: Request, comment_id: int, background_tasks: Back
         CommentSunshines.create(session, True, character_id=user.default_character_id, comment_id=comment_id, post_id=comment.post_id)
         background_tasks.add_task(send_notification, user.default_character_id, comment.character_id, "LikeComment", comment.post_id, session)
         return JSONResponse(status_code=200, content=dict(msg="LIKE_SUCCESS"))
+
+
+@router.post('/report/{post_id}', status_code=204, responses={
+    404: dict(description="No such post", model=Message)
+})
+async def report_post(request: Request, post_id: int, session: Session = Depends(db.session)):
+    user = request.state.user
+    recipient = 'police@bouquet.ooo'
+    post = Posts.get(session, id=post_id)
+    if not post:
+        return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_COMMENT"))
+    sender = "Bouquet <noreply@bouquet.ooo>"
+    title = f"User {user.id}가 Character {post.character_id}의 Post {post_id}를 신고했습니다."
+    charset = "UTF-8"
+    client = boto3.client(service_name='ses',
+                          region_name=environ.get("SES_REGION"),
+                          aws_access_key_id=environ.get('SES_ACCESS_KEY_ID'),
+                          aws_secret_access_key=environ.get('SES_ACCESS_KEY'))
+    try:
+        response = client.send_email(
+            Destination={
+                'ToAddresses': [recipient]
+            },
+            Message={
+                'Body': {
+                    'Text': {
+                        'Charset': charset,
+                        'Data': '신고 들어왔어 일해 광서야',
+                    },
+                },
+                'Subject': {
+                    'Charset': charset,
+                    'Data': title,
+                },
+            },
+            Source=sender,
+        )
+    except ClientError as e:
+        print(e.response['Error']['Message'])
+        return JSONResponse(status_code=500, content=dict(msg="FAILED_SENDING_EMAIL"))
+    else:
+        print(f"Email sent! Message ID: {response['MessageId']}")
+        return JSONResponse(status_code=204)
+
+
+@router.post('/report/comment/{comment_id}', status_code=204, responses={
+    404: dict(description="No such comment", model=Message)
+})
+async def report_comment(request: Request, comment_id: int, session: Session = Depends(db.session)):
+    user = request.state.user
+    recipient = 'police@bouquet.ooo'
+    comment = Comments.get(session, id=comment_id)
+    if not comment:
+        return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_COMMENT"))
+    sender = "Bouquet <noreply@bouquet.ooo>"
+    title = f"User {user.id}가 Character {comment.character_id}의 Comment {comment_id}를 신고했습니다."
+    charset = "UTF-8"
+    client = boto3.client(service_name='ses',
+                          region_name=environ.get("SES_REGION"),
+                          aws_access_key_id=environ.get('SES_ACCESS_KEY_ID'),
+                          aws_secret_access_key=environ.get('SES_ACCESS_KEY'))
+    try:
+        response = client.send_email(
+            Destination={
+                'ToAddresses': [recipient]
+            },
+            Message={
+                'Body': {
+                    'Text': {
+                        'Charset': charset,
+                        'Data': '신고 들어왔어 일해 광서야',
+                    },
+                },
+                'Subject': {
+                    'Charset': charset,
+                    'Data': title,
+                },
+            },
+            Source=sender,
+        )
+    except ClientError as e:
+        print(e.response['Error']['Message'])
+        return JSONResponse(status_code=500, content=dict(msg="FAILED_SENDING_EMAIL"))
+    else:
+        print(f"Email sent! Message ID: {response['MessageId']}")
+        return JSONResponse(status_code=204)
 
 
 
