@@ -95,7 +95,7 @@ async def verify_email(recipient: Email = Body(...), session: Session = Depends(
             문제나 궁금한 점, 피드백 등은 언제나 Bouquet 팀으로 연락 주세요.<br />
             <br/>
             <b>Bouquet</b> 드림<br />
-            noreply@bouquet.ooo
+            support@bouquet.ooo
           </td>
         </tr>
         <tr>
