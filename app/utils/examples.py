@@ -68,7 +68,7 @@ create_post_requests = {
                     "title": "오늘의 일기",
                     "weather": "맑음",
                     "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-                    "date": 20210816,
+                    "date": "20210816",
                     "content": "오늘은 밥을 먹었다. 참 재미있었다."
                 }
             }
@@ -81,7 +81,7 @@ create_post_requests = {
                     "description": "열심히 준비한 앨범입니다!",
                     "title": "this is hiphop",
                     "img": "https://i.pinimg.com/736x/05/79/5a/05795a16b647118ffb6629390e995adb.jpg",
-                    "release_date": 20210821,
+                    "release_date": "20210821",
                     "tracks": [{"title": "배신의 십자가", "lyric": "으아으아으아으아으아으아"}, {"title": "달콤한 오렌지", "lyric": "우와우와우와우와"}]
                 }
             }
