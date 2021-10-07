@@ -311,7 +311,7 @@ class Diaries(Base, BaseMixin):
     title = Column(String(length=255), nullable=False)
     weather = Column(String(length=32), nullable=True)
     img = Column(String(length=255), nullable=True)
-    date = Column(Integer, nullable=False)
+    date = Column(String(length=8), nullable=False)
     content = Column(Text(), nullable=False)
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="cascade"), nullable=False)
 
@@ -322,7 +322,7 @@ class Albums(Base, BaseMixin):
     img = Column(String(length=255), nullable=True)
     artist = Column(String(length=255), nullable=False)
     description = Column(Text(), nullable=True)
-    release_date = Column(Integer, nullable=False)
+    release_date = Column(String(length=8), nullable=False)
     track = relationship("Tracks", backref="tracks", cascade="all, delete-orphan")
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="cascade"), nullable=False)
 
