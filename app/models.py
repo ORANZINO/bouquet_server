@@ -270,7 +270,7 @@ class AlbumTrack(TypedDict):
 class AlbumTemplate(BaseModel):
     type: str = Field("Album", const=True)
     title: constr(strict=True)
-    img: AnyHttpUrl
+    img: Optional[AnyHttpUrl]
     description: Optional[constr(strict=True)]
     release_date: constr(strict=True, regex="[0-9]{4,8}") = Field(..., example="20000918")
     tracks: List[AlbumTrack]
