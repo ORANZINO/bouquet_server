@@ -1,21 +1,35 @@
 from typing import List, Optional
 from collections import defaultdict
 from uuid import uuid4
-
 from fastapi import APIRouter, Depends, Header, Body, BackgroundTasks
 from sqlalchemy.orm import Session
+from sqlalchemy import insert
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-
 from app.database.conn import db
 from app.database.schema import Users, Characters, CharacterHates, CharacterLikes, Follows
 from app.routes.auth import create_access_token
-from app.models import CharacterMe, IDWithToken, UserToken, Message, CharacterCard, CharacterInfo, UserMini, UserCharacters, CharacterUpdate, ID, Token
+from app.models import CharacterMe, IDWithToken, UserToken, Message, CharacterCard, CharacterInfo, UserMini, \
+    UserCharacters, CharacterUpdate, ID, Token
 from app.utils.examples import update_character_requests
 from app.middlewares.token_validator import token_decode
 from app.utils.notification_utils import send_notification
+from app.errors.exceptions import APIException
 
 router = APIRouter(prefix='/character')
+
+
+@router.post('/test', status_code=200)
+async def test(request: Request, session: Session = Depends(db.session)):
+    user = Users(name='Lin', email='citrus@yonsei.ac.kr', pw='11111111', sns_type='Email')
+    print(f'user_id: {user.id}')
+    session.add(user)
+    print(f'user_id: {user.id}')
+    session.flush()
+    print(f'user_id: {user.id}')
+    session.commit()
+    print(f'user_id: {user.id}')
+    return JSONResponse(status_code=200)
 
 
 @router.post('/change', status_code=200, response_model=Token, responses={
@@ -37,7 +51,8 @@ async def change_my_character(request: Request, character_id: int, session: Sess
 
 
 @router.post('', status_code=201, response_model=IDWithToken, responses={
-    202: dict(description="Given character name already exists", model=Message)
+    202: dict(description="Given character name already exists", model=Message),
+    500: dict(description="Something went wrong with the database", model=Message)
 })
 async def create_my_character(request: Request, character: CharacterMe, session: Session = Depends(db.session)):
     user = request.state.user
@@ -48,13 +63,21 @@ async def create_my_character(request: Request, character: CharacterMe, session:
     character["user_id"] = user.id
     character["num_follows"] = 0
     character["num_followers"] = 0
-    new_character = Characters.create(session, True, **character)
-    character_id = new_character.id
-    for like in character['likes']:
-        CharacterLikes.create(session, True, like=like, character_id=character_id)
-    for hate in character['hates']:
-        CharacterHates.create(session, True, hate=hate, character_id=character_id)
-    Users.filter(session, id=user.id).update(auto_commit=True, default_character_id=character_id)
+    likes = character.pop('likes')
+    hates = character.pop('hates')
+    character = Characters(**character)
+    try:
+        session.add(character)
+        session.flush()
+        character_id = character.id
+        session.bulk_insert_mappings(CharacterLikes, [{'like': like, 'character_id': character_id} for like in likes])
+        session.bulk_insert_mappings(CharacterHates, [{'hate': hate, 'character_id': character_id} for hate in hates])
+        session.query(Users).filter_by(id=user.id).update({'default_character_id': character_id})
+        session.flush()
+        session.commit()
+    except:
+        session.rollback()
+        return JSONResponse(status_code=500, content=dict(msg="DB_PROBLEM"))
     user.default_character_id = character_id
     token = f"Bearer {create_access_token(data=UserToken.from_orm(user).dict(exclude={'pw', 'marketing_agree'}))}"
     return JSONResponse(status_code=201, content=dict(id=character_id, Authorization=token))
@@ -78,7 +101,8 @@ async def get_user_characters(user_name: str, session: Session = Depends(db.sess
         user_info = UserMini.from_orm(user_characters[0][0]).dict()
         user_info['num_followers'] = sum(character[1].num_followers for character in user_characters)
         user_info['num_characters'] = len(user_characters)
-        result = dict(user_info=user_info, characters=[CharacterCard.from_orm(character[1]).dict() for character in user_characters])
+        result = dict(user_info=user_info,
+                      characters=[CharacterCard.from_orm(character[1]).dict() for character in user_characters])
 
     return JSONResponse(status_code=200, content=result)
 
@@ -97,7 +121,8 @@ async def who_am_i(request: Request, session: Session = Depends(db.session)):
 @router.get('/{character_name}', status_code=200, response_model=CharacterInfo, responses={
     404: dict(description="No such character", model=Message)
 })
-async def get_character(character_name: str, token: Optional[str] = Header(None), session: Session = Depends(db.session)):
+async def get_character(character_name: str, token: Optional[str] = Header(None),
+                        session: Session = Depends(db.session)):
     character = session.query(Users, Characters).filter(Characters.name == character_name).join(Users.character).first()
     if not character:
         return JSONResponse(status_code=404, content=dict(msg="WRONG_CHARACTER_NAME"))
@@ -120,9 +145,12 @@ async def get_character(character_name: str, token: Optional[str] = Header(None)
 
 
 @router.patch('', status_code=204, responses={
-    400: dict(description="Given character doesn't belong to you", model=Message)
+    400: dict(description="Given character doesn't belong to you", model=Message),
+    500: dict(description="Something went wrong with the database", model=Message)
 })
-async def update_my_character(request: Request, character: CharacterUpdate = Body(..., examples=update_character_requests), session: Session = Depends(db.session)):
+async def update_my_character(request: Request,
+                              character: CharacterUpdate = Body(..., examples=update_character_requests),
+                              session: Session = Depends(db.session)):
     user = request.state.user
     old_character = Characters.get(session, id=user.default_character_id)
     if old_character.user_id != user.id:
@@ -131,20 +159,30 @@ async def update_my_character(request: Request, character: CharacterUpdate = Bod
     character = {key: character[key] for key in character if character[key] is not None}
     character_row = {k: character[k] for k in character.keys() - ['likes', 'hates']}
     Characters.filter(session, id=character['id']).update(True, **character_row)
-    if 'likes' in character:
-        CharacterLikes.filter(session, character_id=character['id']).delete(auto_commit=True)
-        for like in character['likes']:
-            CharacterLikes.create(session, True, like=like, character_id=character['id'])
-    if 'hates' in character:
-        CharacterHates.filter(session, character_id=character['id']).delete(auto_commit=True)
-        for hate in character['hates']:
-            CharacterHates.create(session, True, hate=hate, character_id=character['id'])
-    return JSONResponse(status_code=204)
+    try:
+        session.query(Characters).filter_by(id=character['id']).update(character_row)
+        if 'likes' in character:
+            session.query(CharacterLikes).filter_by(character_id=character['id']).delete()
+            session.bulk_insert_mappings(CharacterLikes, [{'like': like, 'character_id': character['id']} for like in
+                                                          character['likes']])
+        if 'hates' in character:
+            session.query(CharacterHates).filter_by(character_id=character['id']).delete()
+            session.bulk_insert_mappings(CharacterHates, [{'hate': hate, 'character_id': character['id']} for hate in
+                                                          character['hates']])
+        session.flush()
+        session.commit()
+        return JSONResponse(status_code=204)
+    except:
+        session.rollback()
+        return JSONResponse(status_code=500, content=dict(msg="DB_PROBLEM"))
+
+
 
 
 @router.delete('/{character_name}', status_code=204, responses={
     400: dict(description="Given character doesn't belong to you", model=Message),
-    404: dict(description="No such character", model=Message)
+    404: dict(description="No such character", model=Message),
+    500: dict(description="Something went wrong with the database", model=Message)
 })
 async def delete_my_character(request: Request, session: Session = Depends(db.session)):
     user = request.state.user
@@ -153,15 +191,21 @@ async def delete_my_character(request: Request, session: Session = Depends(db.se
         return JSONResponse(status_code=404, content=dict(msg="WRONG_CHARACTER_ID"))
     if character.user_id != user.id:
         return JSONResponse(status_code=400, content=dict(msg="WRONG_USER"))
-    Characters.filter(session, id=character.id, user_id=user.id).delete(auto_commit=True)
-    return JSONResponse(status_code=204)
+    try:
+        Characters.filter(session, id=character.id, user_id=user.id).delete(auto_commit=True)
+        return JSONResponse(status_code=204)
+    except:
+        session.rollback()
+        return JSONResponse(status_code=500, content=dict(msg="DB_PROBLEM"))
 
 
 @router.post('/follow', status_code=200, response_model=Message, responses={
     400: dict(description="Given character doesn't belong to you", model=Message),
-    404: dict(description="No such character", model=Message)
+    404: dict(description="No such character", model=Message),
+    500: dict(description="Something went wrong with the database", model=Message)
 })
-async def follow(request: Request, character_id: ID, background_tasks: BackgroundTasks, session: Session = Depends(db.session)):
+async def follow(request: Request, character_id: ID, background_tasks: BackgroundTasks,
+                 session: Session = Depends(db.session)):
     user = request.state.user
     follower = Characters.get(session, id=user.default_character_id)
     followee = Characters.get(session, id=character_id.id)
@@ -170,26 +214,27 @@ async def follow(request: Request, character_id: ID, background_tasks: Backgroun
     if follower.user_id != user.id:
         return JSONResponse(status_code=400, content=dict(msg="WRONG_USER"))
     follow_exists = Follows.get(session, character_id=followee.id, follower_id=follower.id)
-    if follow_exists:
-        session.query(Characters).filter_by(id=followee.id)\
-            .update({Characters.num_followers: Characters.num_followers - 1})
-        session.query(Characters).filter_by(id=follower.id) \
-            .update({Characters.num_follows: Characters.num_follows - 1})
-        session.commit()
-        session.flush()
-        Follows.filter(session, character_id=followee.id, follower_id=follower.id).delete(True)
-        return JSONResponse(status_code=200, content=dict(msg="UNFOLLOW_SUCCESS"))
-    else:
-        session.query(Characters).filter_by(id=followee.id) \
-            .update({Characters.num_followers: Characters.num_followers + 1})
-        session.query(Characters).filter_by(id=follower.id) \
-            .update({Characters.num_follows: Characters.num_follows + 1})
-        session.commit()
-        session.flush()
-        Follows.create(session, True, character_id=followee.id, follower_id=follower.id)
-        background_tasks.add_task(send_notification, follower.id, followee.id, 'Follow', session=session)
-        return JSONResponse(status_code=200, content=dict(msg="FOLLOW_SUCCESS"))
 
-
-
-
+    try:
+        if follow_exists:
+            session.query(Characters).filter_by(id=followee.id) \
+                .update({Characters.num_followers: Characters.num_followers - 1})
+            session.query(Characters).filter_by(id=follower.id) \
+                .update({Characters.num_follows: Characters.num_follows - 1})
+            session.query(Follows).filter_by(character_id=followee.id, follower_id=follower.id).delete()
+            session.commit()
+            session.flush()
+            return JSONResponse(status_code=200, content=dict(msg="UNFOLLOW_SUCCESS"))
+        else:
+            session.query(Characters).filter_by(id=followee.id) \
+                .update({Characters.num_followers: Characters.num_followers + 1})
+            session.query(Characters).filter_by(id=follower.id) \
+                .update({Characters.num_follows: Characters.num_follows + 1})
+            session.execute(insert(Follows).values(character_id=followee.id, follower_id=follower.id))
+            session.commit()
+            session.flush()
+            background_tasks.add_task(send_notification, follower.id, followee.id, 'Follow', session=session)
+            return JSONResponse(status_code=200, content=dict(msg="FOLLOW_SUCCESS"))
+    except:
+        session.rollback()
+        return JSONResponse(status_code=500, content=dict(msg="DB_PROBLEM"))
