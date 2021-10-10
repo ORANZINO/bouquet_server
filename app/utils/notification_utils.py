@@ -21,25 +21,25 @@ def generate_message(token, sender, receiver, category, created_at, post_id=None
         'category': category[0].lower() + category[1:]
     }
     if category == "LikePost":
-        result['body'] = f'{sender.name}님이 {receiver}님의 게시글을 좋아해요.'
+        result['body'] = f'{sender.name}님이 {receiver.name}님의 게시글을 좋아해요.'
         result['data'] = {'screen': 'NotiTabPostStack',
                           'params': sender.name,
                           'created_at': created_at,
                           'from': {'name': sender.name, 'profile_img': sender.profile_img}}
     elif category == "LikeComment":
-        result['body'] = f'{sender.name}님이 {receiver}님의 댓글을 좋아해요.'
+        result['body'] = f'{sender.name}님이 {receiver.name}님의 댓글을 좋아해요.'
         result['data'] = {'screen': 'NotiTabPostStack',
                           'params': post_id,
                           'created_at': created_at,
                           'from': {'name': sender.name, 'profile_img': sender.profile_img}}
     elif category == "Comment":
-        result['body'] = f'{sender.name}님이 {receiver}님의 게시글에 댓글을 달았어요.'
+        result['body'] = f'{sender.name}님이 {receiver.name}님의 게시글에 댓글을 달았어요.'
         result['data'] = {'screen': 'NotiTabPostStack',
                           'params': post_id,
                           'created_at': created_at,
                           'from': {'name': sender.name, 'profile_img': sender.profile_img}}
     elif category == "Follow":
-        result['body'] = f'{sender.name}님이 {receiver}님을 팔로우해요.'
+        result['body'] = f'{sender.name}님이 {receiver.name}님을 팔로우해요.'
         result['data'] = {'screen': 'NotiTabProfileDetailStack',
                           'params': post_id,
                           'created_at': created_at,
