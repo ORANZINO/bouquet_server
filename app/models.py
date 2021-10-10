@@ -122,7 +122,7 @@ class CharacterUpdate(BaseModel):
     id: PositiveInt = Field(...)
     name: Optional[constr(strict=True)] = Field(None)
     profile_img: Optional[AnyHttpUrl] = Field(None)
-    birth: Optional[constr(strict=True, regex="[0-9]{4,8}")] = None
+    birth: Optional[constr(strict=True, regex="[0-9]{5,8}")] = None
     job: Optional[constr(strict=True)] = Field(None)
     nationality: Optional[constr(strict=True)] = Field(None)
     intro: Optional[constr(strict=True)] = Field(None)
@@ -258,7 +258,7 @@ class DiaryTemplate(BaseModel):
     title: constr(strict=True)
     weather: constr(strict=True)
     img: Optional[AnyHttpUrl]
-    date: constr(strict=True, regex="[0-9]{4,8}") = Field(..., example="19990603")
+    date: constr(strict=True, regex="[0-9]{5,8}") = Field(..., example="19990603")
     content: constr(strict=True)
 
 
@@ -272,7 +272,7 @@ class AlbumTemplate(BaseModel):
     title: constr(strict=True)
     img: Optional[AnyHttpUrl]
     description: Optional[constr(strict=True)]
-    release_date: constr(strict=True, regex="[0-9]{4,8}") = Field(..., example="20000918")
+    release_date: constr(strict=True, regex="[0-9]{5,8}") = Field(..., example="20000918")
     tracks: List[AlbumTrack]
 
 
