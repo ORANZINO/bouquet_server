@@ -179,7 +179,7 @@ class Users(Base, BaseMixin):
     status = Column(Enum("active", "deleted", "blocked"), default="active")
     email = Column(String(length=255), nullable=False)
     pw = Column(String(length=255), nullable=False)
-    name = Column(String(length=255), nullable=False)
+    name = Column(String(length=255), unique=True, nullable=False)
     profile_img = Column(String(length=255), nullable=True)
     sns_type = Column(Enum("Email", "Google", "Apple"), nullable=False)
     marketing_agree = Column(Boolean, nullable=True, default=True)

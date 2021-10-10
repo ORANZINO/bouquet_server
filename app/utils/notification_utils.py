@@ -14,36 +14,32 @@ from app.database.schema import Notifications, Characters, PushTokens
 from datetime import timedelta
 
 
-def generate_message(token, sender, category, created_at, post_id=None):
+def generate_message(token, sender, receiver, category, created_at, post_id=None):
     result = {
         'to': token,
         'sound': 'default',
         'category': category[0].lower() + category[1:]
     }
     if category == "LikePost":
-        result['title'] = '당신의 게시글을 좋아해요.'
-        result['body'] = f'{sender.name}님이 당신의 게시글을 좋아해요.'
+        result['body'] = f'{sender.name}님이 {receiver}님의 게시글을 좋아해요.'
         result['data'] = {'screen': 'NotiTabPostStack',
                           'params': sender.name,
                           'created_at': created_at,
                           'from': {'name': sender.name, 'profile_img': sender.profile_img}}
     elif category == "LikeComment":
-        result['title'] = '당신의 댓글을 좋아해요.'
-        result['body'] = f'{sender.name}님이 당신의 댓글을 좋아해요.'
+        result['body'] = f'{sender.name}님이 {receiver}님의 댓글을 좋아해요.'
         result['data'] = {'screen': 'NotiTabPostStack',
                           'params': post_id,
                           'created_at': created_at,
                           'from': {'name': sender.name, 'profile_img': sender.profile_img}}
     elif category == "Comment":
-        result['title'] = '당신의 게시글에 댓글을 달았어요.'
-        result['body'] = f'{sender.name}님이 당신의 게시글에 댓글을 달았어요.'
+        result['body'] = f'{sender.name}님이 {receiver}님의 게시글에 댓글을 달았어요.'
         result['data'] = {'screen': 'NotiTabPostStack',
                           'params': post_id,
                           'created_at': created_at,
                           'from': {'name': sender.name, 'profile_img': sender.profile_img}}
     elif category == "Follow":
-        result['title'] = '당신을 팔로우해요.'
-        result['body'] = f'{sender.name}님이 당신을 팔로우해요.'
+        result['body'] = f'{sender.name}님이 {receiver}님을 팔로우해요.'
         result['data'] = {'screen': 'NotiTabProfileDetailStack',
                           'params': post_id,
                           'created_at': created_at,
@@ -61,7 +57,7 @@ def send_notification(sender_id: int, receiver_id: int, category: str, post_id: 
         if token:
             response = PushClient().publish(
                 PushMessage(**generate_message(
-                    token, sender, category, (new_notification.created_at + timedelta(hours=9)).isoformat(), post_id)))
+                    token, sender, receiver, category, (new_notification.created_at + timedelta(hours=9)).isoformat(), post_id)))
             response.validate_response()
 
 

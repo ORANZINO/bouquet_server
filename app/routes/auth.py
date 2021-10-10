@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 from botocore.exceptions import ClientError
 from app.common.consts import JWT_SECRET, JWT_ALGORITHM
+from app.errors.exceptions import APIException
 from app.database.conn import db
 from app.database.schema import Users, Characters
 from app.models import SnsType, Token, UserToken, UserRegister, UserLogin, Email, UserName, CharacterName, Duplicated, \
@@ -255,15 +256,23 @@ async def verify_user_email(recipient: Email = Body(...), session: Session = Dep
 
 
 @router.patch('/user/change-pw', status_code=204, description="Successfully changed password", responses={
-    404: dict(description="User with given E-mail doesn't exist", model=Message)
+    404: dict(description="User with given E-mail doesn't exist", model=Message),
+    500: dict(description="Something went wrong with the database", model=Message)
 })
 async def change_password(info: EmailWithPW, session: Session = Depends(db.session)):
     user = Users.get(session, email=info.email)
     if not user:
         return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_USER"))
     new_pw = bcrypt.hashpw(info.pw.encode("utf-8"), bcrypt.gensalt())
-    Users.filter(session, email=info.email).update(True, pw=new_pw)
-    return JSONResponse(status_code=204)
+    try:
+        session.query(Users).filter_by(email=info.email).update({Users.pw: new_pw})
+        session.flush()
+        session.commit()
+        return JSONResponse(status_code=204)
+    except:
+        session.rollback()
+        return JSONResponse(status_code=500, content=dict(msg="DB_PROBLEM"))
+
 
 
 @router.post("/register/{sns_type}", status_code=201, response_model=Token, responses={
