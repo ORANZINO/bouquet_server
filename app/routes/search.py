@@ -64,7 +64,7 @@ async def get_top_posts(page_num: int = Header(1), token: Optional[str] = Header
     else:
         user = await token_decode(access_token=token)
         character_id = user['default_character_id']
-    top_posts = session.query(Posts).order_by(Posts.num_sunshines.desc()).offset((page_num - 1) * 5).limit(5).all()
+    top_posts = session.query(Posts).order_by(Posts.num_sunshines.desc()).order_by(Posts.id.desc()).offset((page_num - 1) * 5).limit(5).all()
     top_posts = [process_post(session, character_id, post) for post in top_posts]
     return JSONResponse(status_code=200, content=dict(posts=top_posts))
 
