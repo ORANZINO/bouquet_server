@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, Body
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.database.conn import db
-from app.database.schema import Users, Characters, CharacterHates, CharacterLikes
+from app.database.schema import Users, Characters, CharacterHates, CharacterLikes, UserBlocks, Follows
 
-from app.models import UserMe, UserUpdate, Message, CharacterProfile, CharacterProfileList
+from app.models import UserMe, UserUpdate, Message, CharacterProfile, CharacterProfileList, ID
 from app.utils.examples import update_user_requests
 
 router = APIRouter(prefix='/user')
@@ -40,6 +41,29 @@ async def delete_me(request: Request, session: Session = Depends(db.session)):
     user = request.state.user
     Users.filter(session, id=user.id).delete(auto_commit=True)
     return JSONResponse(status_code=204)
+
+
+@router.post('/block', status_code=201, description="Successfully blocked user", responses={
+    400: dict(description="You can't block yourself", model=Message),
+    500: dict(description="Something went wrong with the database", model=Message)
+})
+async def block(request: Request, block_id: ID, session: Session = Depends(db.session)):
+    user = request.state.user
+    if block_id.id == user.id:
+        return JSONResponse(status_code=400, content=dict(msg="WRONG_USER_ID"))
+    try:
+        UserBlocks.create(session, False, user_id=user.id, blocked_id=block_id.id)
+        # block_characters = Characters.filter(session, user_id__in=[block_id, user.id]).all()
+        # block_characters = [character.id for character in block_characters if character.user_id == block_id]
+        # my_characters = [character.id for character in block_characters if character.user_id == user.id]
+        # session.query(Follows).filter(or_((Follows.character_id.in_(block_characters), Follows.follower_id.in_(my_characters)),
+        #                                   (Follows.character_id.in_(my_characters), Follows.follower_id.in_(block_characters)))).delete()
+        session.commit()
+        return JSONResponse(status_code=201)
+    except:
+        session.rollback()
+        return JSONResponse(status_code=500, content=dict(msg="DB_PROBLEM"))
+
 
 
 @router.get('/character', status_code=200, response_model=CharacterProfileList, responses={
