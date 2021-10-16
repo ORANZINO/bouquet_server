@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import func
 from starlette.responses import JSONResponse
 from app.utils.post_utils import process_post, process_comment
+from app.utils.block_utils import block_characters
 from app.database.conn import db
 from app.database.schema import Characters, QnASunshines, QnAs, Questions
 from typing import Optional
@@ -35,6 +36,9 @@ async def get_character_qna(character_name: str, token: Optional[str] = Header(N
     qnas = [QnARow.from_orm(qna).dict() for qna in qnas]
     if token is not None:
         user = await token_decode(access_token=token)
+        block_list = block_characters(user, session)
+        if character.id in block_list:
+            return JSONResponse(status_code=400, content=dict(msg="BLOCKED"))
         character_id = user['default_character_id']
         for i, qna in enumerate(qnas):
             qnas[i]['liked'] = bool(QnASunshines.get(session, character_id=character_id, qna_id=qna['id']))

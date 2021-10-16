@@ -2,13 +2,14 @@ from datetime import datetime
 
 from starlette.responses import Response, JSONResponse
 from inspect import currentframe as frame
-from fastapi import APIRouter, Depends, Header, Path
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 from typing import Optional
 from app.database.conn import db
 from app.database.schema import Posts, Follows
 from app.utils.post_utils import process_post
+from app.utils.block_utils import block_characters
 from app.models import PostList
 from app.middlewares.token_validator import token_decode
 

@@ -3,11 +3,11 @@ from collections import defaultdict
 from uuid import uuid4
 from fastapi import APIRouter, Depends, Header, Body, BackgroundTasks
 from sqlalchemy.orm import Session
-from sqlalchemy import insert
+from sqlalchemy import insert, or_
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from app.database.conn import db
-from app.database.schema import Users, Characters, CharacterHates, CharacterLikes, Follows
+from app.database.schema import Users, Characters, CharacterHates, CharacterLikes, Follows, CharacterBlocks, UserBlocks
 from app.routes.auth import create_access_token
 from app.models import CharacterMe, IDWithToken, UserToken, Message, CharacterCard, CharacterInfo, UserMini, \
     UserCharacters, CharacterUpdate, ID, Token
@@ -17,19 +17,6 @@ from app.utils.notification_utils import send_notification
 from app.errors.exceptions import APIException
 
 router = APIRouter(prefix='/character')
-
-
-@router.post('/test', status_code=200)
-async def test(request: Request, session: Session = Depends(db.session)):
-    user = Users(name='Lin', email='citrus@yonsei.ac.kr', pw='11111111', sns_type='Email')
-    print(f'user_id: {user.id}')
-    session.add(user)
-    print(f'user_id: {user.id}')
-    session.flush()
-    print(f'user_id: {user.id}')
-    session.commit()
-    print(f'user_id: {user.id}')
-    return JSONResponse(status_code=200)
 
 
 @router.post('/change', status_code=200, response_model=Token, responses={
@@ -84,19 +71,38 @@ async def create_my_character(request: Request, character: CharacterMe, session:
 
 
 @router.get('/user/{user_name}', status_code=200, response_model=UserCharacters, responses={
+    400: dict(description="Blocked user", model=Message),
     404: dict(description="No such user", model=Message)
 })
-async def get_user_characters(user_name: str, session: Session = Depends(db.session)):
-    user_characters = session.query(Users, Characters).filter(Users.name == user_name).join(Users.character).all()
+async def get_user_characters(user_name: str, token: Optional[str] = Header(None),
+                              session: Session = Depends(db.session)):
+    target = Users.get(session, name=user_name)
+    if not target:
+        return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_USER"))
+    if token:
+        user = await token_decode(access_token=token)
+        user_blocks = session.query(UserBlocks).filter(
+            or_((UserBlocks.user_id == user['id'], UserBlocks.blocked_id == target.id),
+                (UserBlocks.user_id == target.id, UserBlocks.blocked_id == user['id']))).all()
+        if user_blocks:
+            return JSONResponse(status_code=400, content=dict(msg="BLOCKED_USER"))
+        character_blocks = session.query(CharacterBlocks).filter(or_(CharacterBlocks.character_id == user['default_character_id'],
+                                                                     CharacterBlocks.blocked_id == user['default_character_id'])).all()
+        blocked_characters = []
+        for block in character_blocks:
+            if block.character_id == user['default_character_id']:
+                blocked_characters.append(block.blocked_id)
+            else:
+                blocked_characters.append(block.character_id)
+        user_characters = session.query(Users, Characters).filter(Users.name == user_name,
+                                                                  Characters.id.in_(blocked_characters)).join(Users.character).all()
+    else:
+        user_characters = session.query(Users, Characters).filter(Users.name == user_name).join(Users.character).all()
     if not user_characters:
-        user = Users.get(session, name=user_name)
-        if not user:
-            return JSONResponse(status_code=400, content=dict(msg="WRONG_USER_NAME"))
-        else:
-            user_info = UserMini.from_orm(user).dict()
-            user_info['num_followers'] = 0
-            user_info['num_characters'] = 0
-            result = dict(user_info=user_info, characters=[])
+        user_info = UserMini.from_orm(target).dict()
+        user_info['num_followers'] = 0
+        user_info['num_characters'] = 0
+        result = dict(user_info=user_info, characters=[])
     else:
         user_info = UserMini.from_orm(user_characters[0][0]).dict()
         user_info['num_followers'] = sum(character[1].num_followers for character in user_characters)
@@ -118,16 +124,47 @@ async def who_am_i(request: Request, session: Session = Depends(db.session)):
     return JSONResponse(status_code=200, content=dict(id=character.id))
 
 
+@router.post('/block', status_code=201, description="Successfully blocked character", responses={
+    400: dict(description="You can't block yourself", model=Message),
+    500: dict(description="Something went wrong with the database", model=Message)
+})
+async def block(request: Request, block_id: ID, session: Session = Depends(db.session)):
+    user = request.state.user
+    if block_id.id == user.default_character_id:
+        return JSONResponse(status_code=400, content=dict(msg="WRONG_CHARACTER_ID"))
+    try:
+        CharacterBlocks.create(session, False, character_id=user.default_character_id, blocked_id=block_id.id)
+        session.commit()
+        return JSONResponse(status_code=201)
+    except:
+        session.rollback()
+        return JSONResponse(status_code=500, content=dict(msg="DB_PROBLEM"))
+
+
 @router.get('/{character_name}', status_code=200, response_model=CharacterInfo, responses={
+    400: dict(description="Blocked", model=Message),
     404: dict(description="No such character", model=Message)
 })
 async def get_character(character_name: str, token: Optional[str] = Header(None),
                         session: Session = Depends(db.session)):
-    character = session.query(Users, Characters).filter(Characters.name == character_name).join(Users.character).first()
-    if not character:
+    target = Characters.get(session, name=character_name)
+    if not target:
         return JSONResponse(status_code=404, content=dict(msg="WRONG_CHARACTER_NAME"))
-    setattr(character[1], 'user_info', UserMini.from_orm(character[0]).dict())
-    character = character[1]
+    if token:
+        user = await token_decode(access_token=token)
+        user_block = session.query(UserBlocks).filter(
+            or_((UserBlocks.user_id == user['id'], UserBlocks.blocked_id == target.user_id),
+                (UserBlocks.user_id == target.user_id, UserBlocks.blocked_id == user['id']))).all()
+        if user_block:
+            return JSONResponse(status_code=400, content=dict(msg="BLOCKED_USER"))
+        character_block = session.query(CharacterBlocks).filter(
+            or_((CharacterBlocks.character_id == user['default_character_id'], CharacterBlocks.blocked_id == target.id),
+                (CharacterBlocks.blocked_id == user['default_character_id'], CharacterBlocks.character_id == user['default_character_id']))).all()
+        if character_block:
+            return JSONResponse(status_code=400, content=dict(msg="BLOCKED_CHARACTER"))
+
+    setattr(target, 'user_info', UserMini.from_orm(Users.get(session, id=target.user_id)).dict())
+    character = target
     likes = CharacterLikes.filter(session, character_id=character.id).all()
     hates = CharacterHates.filter(session, character_id=character.id).all()
     setattr(character, 'likes', [like.like for like in likes])
@@ -136,7 +173,6 @@ async def get_character(character_name: str, token: Optional[str] = Header(None)
     if token is None:
         setattr(character, 'followed', False)
     else:
-        user = await token_decode(access_token=token)
         follower_id = user['default_character_id']
         setattr(character, 'followed', bool(Follows.get(session, character_id=character.id, follower_id=follower_id)))
 
@@ -175,8 +211,6 @@ async def update_my_character(request: Request,
     except:
         session.rollback()
         return JSONResponse(status_code=500, content=dict(msg="DB_PROBLEM"))
-
-
 
 
 @router.delete('/{character_name}', status_code=204, responses={
@@ -222,8 +256,8 @@ async def follow(request: Request, character_id: ID, background_tasks: Backgroun
             session.query(Characters).filter_by(id=follower.id) \
                 .update({Characters.num_follows: Characters.num_follows - 1})
             session.query(Follows).filter_by(character_id=followee.id, follower_id=follower.id).delete()
-            session.commit()
             session.flush()
+            session.commit()
             return JSONResponse(status_code=200, content=dict(msg="UNFOLLOW_SUCCESS"))
         else:
             session.query(Characters).filter_by(id=followee.id) \
@@ -231,8 +265,8 @@ async def follow(request: Request, character_id: ID, background_tasks: Backgroun
             session.query(Characters).filter_by(id=follower.id) \
                 .update({Characters.num_follows: Characters.num_follows + 1})
             session.execute(insert(Follows).values(character_id=followee.id, follower_id=follower.id))
-            session.commit()
             session.flush()
+            session.commit()
             background_tasks.add_task(send_notification, follower.id, followee.id, 'Follow', session=session)
             return JSONResponse(status_code=200, content=dict(msg="FOLLOW_SUCCESS"))
     except:

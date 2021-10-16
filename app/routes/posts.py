@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Header, Body, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 from app.utils.post_utils import process_post, process_comment
+from app.utils.block_utils import block_characters
 from app.database.conn import db
 from app.database.schema import Posts, Images, Albums, Diaries, Lists, ListComponents, Tracks, Comments, Characters, PostSunshines, CommentSunshines, Users
 from typing import Optional
@@ -119,18 +120,26 @@ async def get_post(post_id: int, token: Optional[str] = Header(None), session: S
     else:
         user = await token_decode(access_token=token)
         character_id = user['default_character_id']
+        block_list = block_characters(user, session)
+        if post.character_id in block_list:
+            return JSONResponse(status_code=400, content=dict(msg="BLOCKED"))
     post = process_post(session, character_id, post)
     post['comments'] = process_comment(session, post_id, character_id)
     return JSONResponse(status_code=200, content=post)
 
 
 @router.get('/character/{character_name}/{page_num}', status_code=200, response_model=PostListWithNum, responses={
+    400: dict(description="Blocked", model=Message),
     404: dict(description="No such character", model=Message)
 })
-async def get_character_posts(character_name: str, page_num: int, session: Session = Depends(db.session)):
+async def get_character_posts(character_name: str, page_num: int, token: Optional[str] = Header(None), session: Session = Depends(db.session)):
     character = Characters.get(session, name=character_name)
     if character_name is None or not character:
         return JSONResponse(status_code=404, content=dict(msg="WRONG_CHARACTER_NAME"))
+    if token:
+        user = token_decode(token)
+        if character.id in block_characters(user, session):
+            return JSONResponse(status_code=400, content=dict(msg="BLOCKED"))
     posts = session.query(Posts).filter(Posts.character_id == character.id).order_by(Posts.created_at.desc()) \
         .offset((page_num - 1) * 10).limit(10).all()
     posts = [process_post(session, character.id, post) for post in posts]

@@ -174,6 +174,12 @@ class BaseMixin:
             self._session.flush()
 
 
+class UserBlocks(Base, BaseMixin):
+    __tablename__ = "user_blocks"
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="cascade"), nullable=False)
+    blocked_id = Column(Integer, ForeignKey("users.id", ondelete="cascade"), nullable=False)
+
+
 class Users(Base, BaseMixin):
     __tablename__ = "users"
     status = Column(Enum("active", "deleted", "blocked"), default="active")
@@ -186,6 +192,10 @@ class Users(Base, BaseMixin):
     default_character_id = Column(Integer, nullable=True, default=None)
     character = relationship("Characters", backref="characters", cascade="all, delete-orphan")
     pushtoken = relationship("PushTokens", backref="pushtokens", cascade="all, delete-orphan")
+    blocker = relationship("UserBlocks", backref="blocker", cascade="all, delete-orphan",
+                           foreign_keys=[UserBlocks.user_id])
+    blocked = relationship("UserBlocks", backref="blocked", cascade="all, delete-orphan",
+                           foreign_keys=[UserBlocks.blocked_id])
 
 
 class Follows(Base, BaseMixin):
@@ -217,6 +227,12 @@ class Notifications(Base, BaseMixin):
     post_id = Column(Integer, nullable=True, default=None)
 
 
+class CharacterBlocks(Base, BaseMixin):
+    __tablename__ = "character_blocks"
+    character_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
+    blocked_id = Column(Integer, ForeignKey("characters.id", ondelete="cascade"), nullable=False)
+
+
 class Characters(Base, BaseMixin):
     __tablename__ = "characters"
     name = Column(String(length=255), unique=True, nullable=False)
@@ -245,6 +261,10 @@ class Characters(Base, BaseMixin):
                                     cascade="all, delete-orphan")
     sender = relationship("Notifications", backref="senders", cascade="all, delete-orphan", foreign_keys=[Notifications.sender_id])
     receiver = relationship("Notifications", backref="receivers", cascade="all, delete-orphan", foreign_keys=[Notifications.receiver_id])
+    blocker = relationship("CharacterBlocks", backref="blocker", cascade="all, delete-orphan",
+                          foreign_keys=[CharacterBlocks.character_id])
+    blocked = relationship("CharacterBlocks", backref="blocked", cascade="all, delete-orphan",
+                            foreign_keys=[CharacterBlocks.blocked_id])
 
 
 class CharacterLikes(Base, BaseMixin):
@@ -358,3 +378,5 @@ class PushTokens(Base, BaseMixin):
     __tablename__ = "push_tokens"
     user_id = Column(Integer, ForeignKey("users.id", ondelete="cascade"), nullable=False)
     token = Column(String(length=255), nullable=False)
+
+
