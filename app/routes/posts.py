@@ -137,7 +137,7 @@ async def get_character_posts(character_name: str, page_num: int, token: Optiona
     if character_name is None or not character:
         return JSONResponse(status_code=404, content=dict(msg="WRONG_CHARACTER_NAME"))
     if token:
-        user = token_decode(token)
+        user = await token_decode(token)
         if character.id in block_characters(user, session):
             return JSONResponse(status_code=400, content=dict(msg="BLOCKED"))
     posts = session.query(Posts).filter(Posts.character_id == character.id).order_by(Posts.created_at.desc()) \
