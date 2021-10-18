@@ -3,7 +3,7 @@ from collections import defaultdict
 from uuid import uuid4
 from fastapi import APIRouter, Depends, Header, Body, BackgroundTasks
 from sqlalchemy.orm import Session
-from sqlalchemy import insert, or_
+from sqlalchemy import insert, and_, or_
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from app.database.conn import db
@@ -82,12 +82,13 @@ async def get_user_characters(user_name: str, token: Optional[str] = Header(None
     if token:
         user = await token_decode(access_token=token)
         user_blocks = session.query(UserBlocks).filter(
-            or_((UserBlocks.user_id == user['id'], UserBlocks.blocked_id == target.id),
-                (UserBlocks.user_id == target.id, UserBlocks.blocked_id == user['id']))).all()
+            or_(and_(UserBlocks.user_id == user['id'], UserBlocks.blocked_id == target.id),
+                and_(UserBlocks.user_id == target.id, UserBlocks.blocked_id == user['id']))).all()
         if user_blocks:
             return JSONResponse(status_code=400, content=dict(msg="BLOCKED_USER"))
-        character_blocks = session.query(CharacterBlocks).filter(or_(CharacterBlocks.character_id == user['default_character_id'],
-                                                                     CharacterBlocks.blocked_id == user['default_character_id'])).all()
+        character_blocks = session.query(CharacterBlocks).filter(
+            or_(CharacterBlocks.character_id == user['default_character_id'],
+                CharacterBlocks.blocked_id == user['default_character_id'])).all()
         blocked_characters = []
         for block in character_blocks:
             if block.character_id == user['default_character_id']:
@@ -95,7 +96,8 @@ async def get_user_characters(user_name: str, token: Optional[str] = Header(None
             else:
                 blocked_characters.append(block.character_id)
         user_characters = session.query(Users, Characters).filter(Users.name == user_name,
-                                                                  Characters.id.in_(blocked_characters)).join(Users.character).all()
+                                                                  Characters.id.in_(blocked_characters)).join(
+            Users.character).all()
     else:
         user_characters = session.query(Users, Characters).filter(Users.name == user_name).join(Users.character).all()
     if not user_characters:
@@ -152,17 +154,19 @@ async def get_character(character_name: str, token: Optional[str] = Header(None)
         return JSONResponse(status_code=404, content=dict(msg="WRONG_CHARACTER_NAME"))
     if token:
         user = await token_decode(access_token=token)
-        user_block = session.query(UserBlocks).filter(
-            or_((UserBlocks.user_id == user['id'], UserBlocks.blocked_id == target.user_id),
-                (UserBlocks.user_id == target.user_id, UserBlocks.blocked_id == user['id']))).all()
+        user_block = session.query(UserBlocks).filter(and_(UserBlocks.user_id == user['id'],
+                                                           UserBlocks.blocked_id == target.user_id) |
+                                                      and_(UserBlocks.user_id == target.user_id,
+                                                           UserBlocks.blocked_id == user['id'])).all()
         if user_block:
             return JSONResponse(status_code=400, content=dict(msg="BLOCKED_USER"))
         character_block = session.query(CharacterBlocks).filter(
-            or_((CharacterBlocks.character_id == user['default_character_id'], CharacterBlocks.blocked_id == target.id),
-                (CharacterBlocks.blocked_id == user['default_character_id'], CharacterBlocks.character_id == user['default_character_id']))).all()
+            and_(CharacterBlocks.character_id == user['default_character_id'],
+                 CharacterBlocks.blocked_id == target.id) | and_(
+                CharacterBlocks.blocked_id == user['default_character_id'],
+                CharacterBlocks.character_id == target.id)).all()
         if character_block:
             return JSONResponse(status_code=400, content=dict(msg="BLOCKED_CHARACTER"))
-
     setattr(target, 'user_info', UserMini.from_orm(Users.get(session, id=target.user_id)).dict())
     character = target
     likes = CharacterLikes.filter(session, character_id=character.id).all()
