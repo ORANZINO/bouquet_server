@@ -30,7 +30,7 @@ async def index(page_num: Optional[int] = Header(1), token: Optional[str] = Head
         posts = session.query(Posts).filter(Posts.character_id.in_(followees)).order_by(Posts.created_at.desc()) \
             .offset((page_num - 1) * 10).limit(10).all()
         if len(posts) < 10:
-            posts += session.query(Posts).filter(Posts.character_id.not_in_(followees)).order_by(
+            posts += session.query(Posts).filter(Posts.character_id.not_in(followees)).order_by(
                 Posts.created_at.desc()) \
                 .offset((page_num - 1) * 10).limit(10 - len(posts)).all()
 
