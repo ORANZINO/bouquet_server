@@ -17,7 +17,8 @@ router = APIRouter()
 
 
 @router.get("/", status_code=200, response_model=PostList)
-async def index(page_num: Optional[int] = Header(1), token: Optional[str] = Header(None), session: Session = Depends(db.session)):
+async def index(page_num: Optional[int] = Header(1), token: Optional[str] = Header(None),
+                session: Session = Depends(db.session)):
     if token is None:
         posts = session.query(Posts).order_by(Posts.num_sunshines.desc()).offset((page_num - 1) * 10).limit(10).all()
         character_id = None
@@ -26,8 +27,12 @@ async def index(page_num: Optional[int] = Header(1), token: Optional[str] = Head
         character_id = user['default_character_id']
         followees = Follows.filter(session, follower_id=character_id).all()
         followees = [f.character_id for f in followees]
-        posts = session.query(Posts).filter(Posts.character_id.in_(followees)).order_by(Posts.created_at.desc())\
+        posts = session.query(Posts).filter(Posts.character_id.in_(followees)).order_by(Posts.created_at.desc()) \
             .offset((page_num - 1) * 10).limit(10).all()
+        if len(posts) < 10:
+            posts += session.query(Posts).filter(Posts.character_id.not_in_(followees)).order_by(
+                Posts.created_at.desc()) \
+                .offset((page_num - 1) * 10).limit(10 - len(posts)).all()
 
     posts = [process_post(session, character_id, post) for post in posts]
 
@@ -42,7 +47,7 @@ async def test(request: Request):
     """
     print("state.user", request.state.user)
     try:
-        a = 1/0
+        a = 1 / 0
     except Exception as e:
         request.state.inspect = frame()
         raise e
