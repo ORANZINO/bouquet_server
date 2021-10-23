@@ -60,7 +60,6 @@ class SQLAlchemy:
         )
 
         if not _database_exist(temp_engine, self._db_name):
-            from app.database.schema import Users, Characters, CharacterLikes, CharacterHates
             _create_database(temp_engine, self._db_name)
             self._engine = create_engine(
                 schema_url,
@@ -68,10 +67,6 @@ class SQLAlchemy:
                 pool_recycle=pool_recycle,
                 pool_pre_ping=True,
             )
-            Users.metadata.create_all(self._engine)
-            Characters.metadata.create_all(self._engine)
-            CharacterLikes.metadata.create_all(self._engine)
-            CharacterHates.metadata.create_all(self._engine)
 
         else:
             self._engine = create_engine(

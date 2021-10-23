@@ -378,5 +378,3 @@ class PushTokens(Base, BaseMixin):
     __tablename__ = "push_tokens"
     user_id = Column(Integer, ForeignKey("users.id", ondelete="cascade"), nullable=False)
     token = Column(String(length=255), nullable=False)
-
-
