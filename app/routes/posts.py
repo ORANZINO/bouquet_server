@@ -172,7 +172,7 @@ async def like_post(request: Request, post_id: int, background_tasks: Background
             session.flush()
             PostSunshines.create(session, False, character_id=user.default_character_id, post_id=post.id)
             session.commit()
-            background_tasks.add_task(send_notification, user.default_character_id, post.character_id, "LikeComment", post.id, session)
+            background_tasks.add_task(send_notification, user.default_character_id, post.character_id, "LikePost", post.id, session)
             return JSONResponse(status_code=200, content=dict(msg="LIKE_SUCCESS"))
     except:
         session.rollback()
