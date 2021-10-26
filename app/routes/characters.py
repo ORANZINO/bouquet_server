@@ -10,7 +10,7 @@ from app.database.conn import db
 from app.database.schema import Users, Characters, CharacterHates, CharacterLikes, Follows, CharacterBlocks, UserBlocks
 from app.routes.auth import create_access_token
 from app.models import CharacterMe, IDWithToken, UserToken, Message, CharacterCard, CharacterInfo, UserMini, \
-    UserCharacters, CharacterUpdate, ID, Token
+    UserCharacters, CharacterUpdate, ID, Token, CharacterName
 from app.utils.examples import update_character_requests
 from app.middlewares.token_validator import token_decode
 from app.utils.notification_utils import send_notification
@@ -128,14 +128,19 @@ async def who_am_i(request: Request, session: Session = Depends(db.session)):
 
 @router.post('/block', status_code=201, description="Successfully blocked character", responses={
     400: dict(description="You can't block yourself", model=Message),
+    404: dict(description="Given character doesn't exist", model=Message),
     500: dict(description="Something went wrong with the database", model=Message)
 })
-async def block(request: Request, block_id: ID, session: Session = Depends(db.session)):
+async def block(request: Request, block_name: CharacterName, session: Session = Depends(db.session)):
     user = request.state.user
-    if block_id.id == user.default_character_id:
-        return JSONResponse(status_code=400, content=dict(msg="WRONG_CHARACTER_ID"))
+    my_character = Characters.get(session, id=user.default_character_id)
+    block_character = Characters.get(session, name=block_name.character_name)
+    if not block_character:
+        return JSONResponse(status_code=404, content=dict(msg="NO_MATCH_CHARACTER"))
+    elif block_character.name == my_character.name:
+        return JSONResponse(status_code=400, content=dict(msg="WRONG_CHARACTER_NAME"))
     try:
-        CharacterBlocks.create(session, False, character_id=user.default_character_id, blocked_id=block_id.id)
+        CharacterBlocks.create(session, False, character_id=user.default_character_id, blocked_id=block_character.id)
         session.commit()
         return JSONResponse(status_code=201)
     except:
