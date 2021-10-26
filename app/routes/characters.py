@@ -222,11 +222,11 @@ async def update_my_character(request: Request,
     404: dict(description="No such character", model=Message),
     500: dict(description="Something went wrong with the database", model=Message)
 })
-async def delete_my_character(request: Request, session: Session = Depends(db.session)):
+async def delete_my_character(request: Request, character_name: str, session: Session = Depends(db.session)):
     user = request.state.user
-    character = Characters.get(session, id=user.default_character_id)
+    character = Characters.get(session, name=character_name)
     if not character:
-        return JSONResponse(status_code=404, content=dict(msg="WRONG_CHARACTER_ID"))
+        return JSONResponse(status_code=404, content=dict(msg="WRONG_CHARACTER_NAME"))
     if character.user_id != user.id:
         return JSONResponse(status_code=400, content=dict(msg="WRONG_USER"))
     try:
