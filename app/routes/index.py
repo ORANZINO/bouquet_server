@@ -1,5 +1,11 @@
 from datetime import datetime
-
+from exponent_server_sdk import (
+    DeviceNotRegisteredError,
+    PushClient,
+    PushMessage,
+    PushServerError,
+    PushTicketError,
+)
 from starlette.responses import Response, JSONResponse
 from inspect import currentframe as frame
 from fastapi import APIRouter, Depends, Header
@@ -7,7 +13,7 @@ from sqlalchemy.orm import Session
 from starlette.requests import Request
 from typing import Optional
 from app.database.conn import db
-from app.database.schema import Posts, Follows
+from app.database.schema import Posts, Follows, PushTokens
 from app.utils.post_utils import process_post
 from app.utils.block_utils import block_characters
 from app.models import PostList
@@ -40,16 +46,18 @@ async def index(page_num: Optional[int] = Header(1), token: Optional[str] = Head
 
 
 @router.get("/test")
-async def test(request: Request):
-    """
-    ELB 상태 체크용 API
-    :return:
-    """
-    print("state.user", request.state.user)
-    try:
-        a = 1 / 0
-    except Exception as e:
-        request.state.inspect = frame()
-        raise e
-    current_time = datetime.utcnow()
-    return Response(f"Notification API (UTC: {current_time.strftime('%Y.%m.%d %H:%M:%S')})")
+async def test(request: Request, session: Session = Depends(db.session)):
+
+    tokens = [row.token for row in session.query(PushTokens).filter_by(user_id=1).all() if row.token]
+    print(tokens)
+    result = {
+        'to': tokens[0],
+        'sound': 'default',
+        'category': 'ALL',
+        'title': 'Today’s Bouquet 인터뷰',
+        'body': 'Bouquet에서 부캐들을 인터뷰하고 싶어해요! 나의 부캐에 대해 알려주세요!',
+        'data': 'https://forms.gle/d7eYq4y6pMXjBFd6A'
+    }
+
+    response = PushClient().publish(PushMessage(**result))
+    response.validate_response()
