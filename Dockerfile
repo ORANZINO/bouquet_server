@@ -10,6 +10,7 @@ FROM base AS deps
 COPY requirements.txt ./
 RUN apt update > /dev/null && \ 
         apt install -y build-essential && \
+    apt-get -y install libgl1-mesa-glx && \
         pip install --disable-pip-version-check -r requirements.txt && \
 	pip install --disable-pip-version-check torch torchvision torchaudio -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
 
