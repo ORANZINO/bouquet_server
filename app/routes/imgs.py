@@ -12,7 +12,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from types import SimpleNamespace
 from app.stargan.solver import Solver
-from app.models import SexType
+from app.models import SexType, Message
 from PIL import Image
 from app.errors import exceptions as ex
 
@@ -47,12 +47,17 @@ async def upload_img(img: UploadFile = File(...)):
     return JSONResponse(status_code=201, content=dict(msg="UPLOAD_IMAGE_SUCCESS", url=upload_url))
 
 
-@router.post('/style', status_code=201)
+@router.post('/style', status_code=200, responses={
+    400: dict(description="No face detected in the given image", model=Message)
+})
 async def style_img(request: Request, target_sex: SexType, img: UploadFile = File(...)):
     user = request.state.user
     filename = img.filename
-    img = Image.open(img.file).convert('RGB')
-    styled_img = solver.style(img, target_sex)
+    cv2_img = await img.read()
+    pil_img = Image.open(img.file).convert('RGB')
+    styled_img = solver.style(cv2_img, pil_img, target_sex)
+    if styled_img == "ERROR":
+        return JSONResponse(status_code=400, content=dict(msg="NO_DETECTED_FACE"))
     buf = io.BytesIO()
     styled_img.save(buf, format='PNG')
     buf.seek(0)
@@ -60,16 +65,22 @@ async def style_img(request: Request, target_sex: SexType, img: UploadFile = Fil
     s3_client.upload_fileobj(buf, bucket, save_name)
     upload_url = f"https://{bucket}.s3.{region}.amazonaws.com/{save_name}"
 
-    return JSONResponse(status_code=201, content=dict(msg="STYLE_IMAGE_SUCCESS", url=upload_url))
+    return JSONResponse(status_code=200, content=dict(msg="STYLE_IMAGE_SUCCESS", url=upload_url))
 
 
-@router.post('/ref')
+@router.post('/ref', status_code=200, responses={
+    400: dict(description="No face detected in the given image", model=Message)
+})
 async def ref_img(request: Request, target_sex: SexType, src: UploadFile = File(...), ref: UploadFile = File(...)):
     user = request.state.user
     filename = src.filename
-    src = Image.open(src.file).convert('RGB')
-    ref = Image.open(ref.file).convert('RGB')
-    refed_img = solver.ref(ref, src, target_sex)
+    cv2_ref = await ref.read()
+    cv2_src = await src.read()
+    pil_ref = Image.open(ref.file).convert('RGB')
+    pil_src = Image.open(src.file).convert('RGB')
+    refed_img = solver.ref(pil_ref, pil_src, cv2_ref, cv2_src, target_sex)
+    if refed_img == "ERROR":
+        return JSONResponse(status_code=400, content=dict(msg="NO_DETECTED_FACE"))
     buf = io.BytesIO()
     refed_img.save(buf, format='PNG')
     buf.seek(0)

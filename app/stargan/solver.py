@@ -10,11 +10,13 @@ Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
 
 import os
 from os.path import join as ospj
-from munch import Munch
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import random
+import numpy as np
+import cv2
+from types import SimpleNamespace
 
 from app.stargan.model import build_model
 from app.stargan.checkpoint import CheckpointIO
@@ -22,6 +24,9 @@ import app.stargan.utils as utils
 from torchvision import transforms
 from PIL import Image
 
+args = SimpleNamespace()
+args.confidence = 0.5
+net = cv2.dnn.readNetFromCaffe('stargan/deploy.prototxt.txt', 'stargan/res10_300x300_ssd_iter_140000.caffemodel')
 
 class Solver(nn.Module):
     def __init__(self, args):
@@ -51,16 +56,46 @@ class Solver(nn.Module):
     def _reset_grad(self):
         for optim in self.optims.values():
             optim.zero_grad()
-        
-    @torch.no_grad()
-    def style(self, img, target_sex):
+
+    def crop_face(self, cv2_img, pil_img):
+        nparr = np.fromstring(cv2_img, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        blob = cv2.dnn.blobFromImage(cv2.resize(image, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
+        net.setInput(blob)
+        detections = net.forward()
+        w, h = pil_img.size
+        confidence = detections[0, 0, 0, 2]
+        if confidence > 0.8:
+            box = detections[0, 0, 0, 3:7] * np.array([w, h, w, h])
+            (startX, startY, endX, endY) = box.astype("int")
+            startX = startX - (endX - startX) * 0.2 if startX - (endX - startX) * 0.2 > 0 else 0
+            startY = startY - (endY - startY) * 0.15 if startY - (endY - startY) * 0.15 > 0 else 0
+            endX = endX + (endX - startX) * 0.2 if endX + (endX - startX) * 0.2 < w else w
+            endY = endY + (endY - startY) * 0.15 if endY + (endY - startY) * 0.15 < h else h
+            return pil_img.crop((startX, startY, endX, endY))
+        else:
+            # no detected face
+            return 0
+
+    def style(self, cv2_img, pil_img, target_sex):
         nets_ema = self.nets_ema
-        style_img = Image.open("stargan/005923.jpeg")
-        return generate(nets_ema, style_img, img, target_sex)
+        if target_sex == 0:
+            style_img = Image.open("stargan/198523.jpeg")
+        else:
+            style_img = Image.open("stargan/038044.jpeg")
+        pil_img = self.crop_face(cv2_img, pil_img)
+        if pil_img != 0:
+            return generate(nets_ema, style_img, pil_img, target_sex)
+        else:
+            return "ERROR"
 
     @torch.no_grad()
-    def ref(self, ref_img, src_img, target_sex):
+    def ref(self, pil_ref, pil_src, cv2_ref, cv2_src, target_sex):
         nets_ema = self.nets_ema
+        print("REF")
+        ref_img = self.crop_face(cv2_ref, pil_ref)
+        print("SRC")
+        src_img = self.crop_face(cv2_src, pil_src)
         return generate(nets_ema, ref_img, src_img, target_sex)
 
 
@@ -82,7 +117,7 @@ def generate(nets, ref, src, target_sex, img_size=256):
     ref = transform(ref).unsqueeze(0).to(device)
     src = transform(src).unsqueeze(0).to(device)
     y_trg = torch.tensor([target_sex]).to(device)
-    masks = nets.fan.get_heatmap(src).to(device)
+    masks = nets.fan.get_heatmap(src)
     s_trg = nets.style_encoder(ref, y_trg).to(device)
     x_fake = nets.generator(src, s_trg, masks=masks)
     return transforms.ToPILImage()(denormalize(x_fake[0])).convert("RGB")
