@@ -56,7 +56,9 @@ class SQLAlchemy:
             database_url,
             echo=echo,
             pool_recycle=pool_recycle,
-            pool_pre_ping=True
+            pool_pre_ping=True,
+            pool_size=20,
+            max_overflow=20
         )
 
         if not _database_exist(temp_engine, self._db_name):
