@@ -26,19 +26,17 @@ router = APIRouter()
 async def index(page_num: Optional[int] = Header(1), token: Optional[str] = Header(None),
                 session: Session = Depends(db.session)):
     if token is None:
-        posts = session.query(Posts).filter(Posts.created_at > (datetime.now() - timedelta(hours=72)))\
-            .order_by(Posts.num_sunshines.desc()).offset((page_num - 1) * 10).limit(10).all()
+        posts = session.query(Posts).order_by(Posts.num_sunshines.desc()).offset((page_num - 1) * 10).limit(10).all()
         character_id = None
     else:
         user = await token_decode(access_token=token)
         character_id = user['default_character_id']
         followees = Follows.filter(session, follower_id=character_id).all()
         followees = [f.character_id for f in followees]
-        posts = session.query(Posts).filter(Posts.created_at > (datetime.now() - timedelta(hours=72)))\
-            .filter(Posts.character_id.in_(followees)).order_by(Posts.created_at.desc()).offset((page_num - 1) * 10).limit(10).all()
+        posts = session.query(Posts).filter(Posts.character_id.in_(followees)).order_by(Posts.created_at.desc()).offset((page_num - 1) * 10).limit(10).all()
 
         if len(posts) < 10:
-            posts += session.query(Posts).filter(Posts.created_at > (datetime.now() - timedelta(hours=72)))\
+            posts += session.query(Posts)\
                 .filter(Posts.character_id.not_in(followees)).order_by(Posts.created_at.desc())\
                 .offset((page_num - 1) * 10).limit(10 - len(posts)).all()
 

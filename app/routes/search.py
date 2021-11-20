@@ -9,6 +9,7 @@ from app.database.schema import Characters, Posts, Albums, Images, Diaries, Trac
 from app.utils.post_utils import process_post
 from app.models import CharacterCard, CharacterList, PostList, PostRow
 from app.utils.block_utils import block_characters
+from datetime import timedelta
 
 router = APIRouter(prefix='/search')
 
@@ -67,7 +68,7 @@ async def get_top_posts(page_num: int = Header(1), token: Optional[str] = Header
         user = await token_decode(access_token=token)
         character_id = user['default_character_id']
         block_list = block_characters(user, session)
-    top_posts = session.query(Posts).filter(~Posts.character_id.in_(block_list)).order_by(Posts.num_sunshines.desc()).order_by(Posts.id.desc()).offset((page_num - 1) * 5).limit(5).all()
+    top_posts = session.query(Posts).filter(Posts.created_at > (datetime.now() - timedelta(hours=72))).filter(~Posts.character_id.in_(block_list)).order_by(Posts.num_sunshines.desc()).order_by(Posts.id.desc()).offset((page_num - 1) * 5).limit(5).all()
     top_posts = [process_post(session, character_id, post) for post in top_posts]
     return JSONResponse(status_code=200, content=dict(posts=top_posts))
 
@@ -78,6 +79,6 @@ async def get_top_characters(token: Optional[str] = Header(None), session: Sessi
     if token:
         user = await token_decode(access_token=token)
         block_list = block_characters(user, session)
-    top_characters = session.query(Characters).filter(~Characters.id.in_(block_list)).order_by(Characters.num_followers.desc()).limit(5)
+    top_characters = session.query(Characters).filter(Posts.created_at > (datetime.now() - timedelta(hours=72))).filter(~Characters.id.in_(block_list)).order_by(Characters.num_followers.desc()).limit(5)
     top_characters = [CharacterCard.from_orm(character).dict() for character in top_characters]
     return JSONResponse(status_code=200, content=dict(characters=top_characters))
