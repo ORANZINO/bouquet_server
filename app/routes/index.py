@@ -1,4 +1,3 @@
-from datetime import datetime
 from exponent_server_sdk import (
     DeviceNotRegisteredError,
     PushClient,
@@ -7,7 +6,6 @@ from exponent_server_sdk import (
     PushTicketError,
 )
 from starlette.responses import Response, JSONResponse
-from datetime import timedelta
 from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 from starlette.requests import Request
